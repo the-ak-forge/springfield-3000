@@ -144,7 +144,7 @@ export function toMetaPreview(
     name: saga.name[lang],
     poster: posterUrl,
     posterShape: 'poster',
-    background: posterUrl,
+    background: saga.background,
     description: saga.description[lang],
     releaseInfo: saga.releaseInfo,
     imdbRating: saga.imdbRating,

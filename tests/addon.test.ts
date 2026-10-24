@@ -184,7 +184,8 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     const json = (await res.json()) as any;
     expect(json.metas.length).toBe(32);
     expect(json.metas[0].poster).toContain('/poster/en/simpsons-bob-saga.jpg');
-    expect(json.metas[0].background).toContain('/poster/en/simpsons-bob-saga.jpg');
+    expect(json.metas[0].background).toBeTruthy();
+    expect(json.metas[0].posterShape).toBe('poster');
     expect(json.metas[1].poster).toContain('/poster/en/simpsons-burns-files.jpg');
 
     // Backward compatibility for legacy springfield3000-all catalog ID
