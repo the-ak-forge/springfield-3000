@@ -244,4 +244,50 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
+
+  it('should set optimal Cache-Control headers across endpoints', async () => {
+    const manifestRes = await worker.fetch(
+      new Request('https://springfield-3000.workers.dev/manifest.json'),
+      {}
+    );
+    expect(manifestRes.headers.get('Cache-Control')).toContain('max-age=3600');
+
+    const metaRes = await worker.fetch(
+      new Request('https://springfield-3000.workers.dev/meta/series/simpsons-bob-saga.json'),
+      {}
+    );
+    expect(metaRes.headers.get('Cache-Control')).toContain('max-age=21600');
+
+    const configRes = await worker.fetch(
+      new Request('https://springfield-3000.workers.dev/configure'),
+      {}
+    );
+    expect(configRes.headers.get('Cache-Control')).toContain('no-store');
+  });
+
+  it('should utilize edge cache with versioned key', async () => {
+    const cachedBody = JSON.stringify({ cached: true });
+    const mockCache = {
+      match: async (req: Request) => {
+        const url = new URL(req.url);
+        if (url.searchParams.get('addon_ver') === ADDON_VERSION) {
+          return new Response(cachedBody, { status: 200 });
+        }
+        return undefined;
+      },
+      put: async () => {},
+    };
+
+    // Inject global caches mock
+    (globalThis as any).caches = { default: mockCache };
+
+    const req = new Request('https://springfield-3000.workers.dev/manifest.json');
+    const res = await worker.fetch(req, {});
+    const text = await res.text();
+
+    expect(text).toBe(cachedBody);
+
+    // Clean up mock
+    delete (globalThis as any).caches;
+  });
 });

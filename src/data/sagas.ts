@@ -692,8 +692,8 @@ export const SAGAS: SagaDefinition[] = [
       es: '25. El Renacimiento en Hulu (Era Moderna 2023-2026)',
     },
     description: {
-      en: 'Streaming meta-satire, simulated universes, and the best highlights of Futurama’s revival era.',
-      es: 'Meta-sátira del streaming, universos simulados y los mejores episodios del renacimiento moderno de Futurama.',
+      en: '4 hand-picked highlight episodes: streaming meta-satire, simulated universes, and the best of Futurama’s revival era.',
+      es: '4 episodios destacados seleccionados a mano: meta-sátira del streaming, universos simulados y lo mejor del renacimiento de Futurama.',
     },
     poster: epImg(FUTURAMA_IMDB, 11, 1),
     background: epImg(FUTURAMA_IMDB, 11, 1),
