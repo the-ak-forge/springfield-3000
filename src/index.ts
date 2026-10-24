@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.2';
+export const ADDON_VERSION = '1.0.3';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -24,10 +24,16 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
+const HTML_SECURITY_HEADERS: Record<string, string> = {
+  ...SECURITY_HEADERS,
+  'Content-Security-Policy':
+    "default-src 'self'; img-src * data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none';",
+};
+
 const CACHE_CONTROL_META = 'public, max-age=86400, stale-while-revalidate=43200';
 const CACHE_CONTROL_MANIFEST = 'public, max-age=3600, stale-while-revalidate=1800';
 
-function safeDecodePath(pathname: string): string {
+export function safeDecodePath(pathname: string): string {
   try {
     return decodeURIComponent(pathname).replace(/\/+$/, '') || '/';
   } catch {
@@ -80,7 +86,7 @@ export function decodeConfig(rawSegment?: string): UserConfig {
   }
 }
 
-function buildManifest(config: UserConfig): StremioManifest {
+export function buildManifest(config: UserConfig): StremioManifest {
   const isEn = config.lang === 'en';
 
   const catalogs: StremioManifest['catalogs'] = [
@@ -123,7 +129,7 @@ function buildManifest(config: UserConfig): StremioManifest {
   };
 }
 
-function toMetaPreview(saga: SagaDefinition, lang: Language): StremioMetaPreview {
+export function toMetaPreview(saga: SagaDefinition, lang: Language): StremioMetaPreview {
   return {
     id: saga.id,
     type: 'series',
@@ -138,7 +144,7 @@ function toMetaPreview(saga: SagaDefinition, lang: Language): StremioMetaPreview
   };
 }
 
-function toMetaDetail(saga: SagaDefinition, lang: Language): StremioMetaDetail {
+export function toMetaDetail(saga: SagaDefinition, lang: Language): StremioMetaDetail {
   const prefixTag = lang === 'en' ? 'S' : 'T';
 
   const videos: StremioVideo[] = saga.episodes.map((ep, index) => {
@@ -170,7 +176,11 @@ function toMetaDetail(saga: SagaDefinition, lang: Language): StremioMetaDetail {
   };
 }
 
-function jsonResponse(data: unknown, cacheControl = CACHE_CONTROL_META, status = 200): Response {
+export function jsonResponse(
+  data: unknown,
+  cacheControl = CACHE_CONTROL_META,
+  status = 200
+): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -182,13 +192,13 @@ function jsonResponse(data: unknown, cacheControl = CACHE_CONTROL_META, status =
   });
 }
 
-function htmlResponse(html: string, status = 200): Response {
+export function htmlResponse(html: string, status = 200): Response {
   return new Response(html, {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache',
-      ...SECURITY_HEADERS,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      ...HTML_SECURITY_HEADERS,
     },
   });
 }
@@ -211,7 +221,7 @@ export default {
         });
       }
 
-      // 2. HTTP Method Validation
+      // 2. HTTP Method Validation (Only GET, HEAD, OPTIONS allowed)
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         return new Response(
           JSON.stringify({ error: 'Method Not Allowed' }),
@@ -227,135 +237,128 @@ export default {
         );
       }
 
-      // 3. Cloudflare Edge Cache API Lookup
+      const url = new URL(request.url);
+      const path = safeDecodePath(url.pathname);
+
+      // 3. Edge Cache Lookup with Version Key (Prevents stale responses across deploys)
       const cache = typeof caches !== 'undefined' ? (caches as unknown as { default?: Cache }).default : undefined;
-      if (cache && request.method === 'GET') {
-        const cachedResponse = await cache.match(request);
+      const cacheKeyUrl = new URL(request.url);
+      cacheKeyUrl.searchParams.set('addon_ver', ADDON_VERSION);
+      const cacheKey = new Request(cacheKeyUrl.toString(), request);
+
+      if (cache && request.method === 'GET' && !path.endsWith('/configure') && path !== '/') {
+        const cachedResponse = await cache.match(cacheKey);
         if (cachedResponse) {
           return cachedResponse;
         }
       }
 
-      const url = new URL(request.url);
-      const path = safeDecodePath(url.pathname);
-
       let response: Response;
 
-      // 4. Root & Configure UI Routes
+      // 4. Flat Route Dispatcher
+      // 4.1 Configure Page
       if (path === '/' || path === '/configure') {
         response = htmlResponse(renderConfigurePage());
-      } else {
-        const configUiMatch = path.match(/^\/([^/]+)\/configure$/);
-        if (configUiMatch) {
-          const userConfig = decodeConfig(configUiMatch[1]);
-          response = htmlResponse(renderConfigurePage(userConfig));
-        }
-        // 5. Manifest Routes (/manifest.json or /:config/manifest.json)
-        else if (path === '/manifest.json') {
-          const defaultConfig = decodeConfig();
-          response = jsonResponse(buildManifest(defaultConfig), CACHE_CONTROL_MANIFEST);
+      } else if (/^\/([^/]+)\/configure$/.test(path)) {
+        const match = path.match(/^\/([^/]+)\/configure$/)!;
+        const userConfig = decodeConfig(match[1]);
+        response = htmlResponse(renderConfigurePage(userConfig));
+      }
+      // 4.2 Manifest Routes
+      else if (path === '/manifest.json') {
+        const defaultConfig = decodeConfig();
+        response = jsonResponse(buildManifest(defaultConfig), CACHE_CONTROL_MANIFEST);
+      } else if (/^\/([^/]+)\/manifest\.json$/.test(path)) {
+        const match = path.match(/^\/([^/]+)\/manifest\.json$/)!;
+        const userConfig = decodeConfig(match[1]);
+        response = jsonResponse(buildManifest(userConfig), CACHE_CONTROL_MANIFEST);
+      }
+      // 4.3 Catalog Routes (supports optional extras with dots e.g. search=foo)
+      else if (
+        /^\/([^/]+)\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/.test(path) ||
+        /^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/.test(path)
+      ) {
+        const match =
+          path.match(/^\/([^/]+)\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/) ??
+          path.match(/^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/)!;
+
+        const hasConfigSegment = match.length === 4;
+        const userConfig = hasConfigSegment ? decodeConfig(match[1]) : decodeConfig();
+        const catalogId = hasConfigSegment ? match[2] : match[1];
+
+        const allowedCatalogs = new Set([
+          'springfield3000-all',
+          'springfield3000-simpsons',
+          'springfield3000-futurama',
+          'springfield3000-crossover',
+        ]);
+
+        if (!allowedCatalogs.has(catalogId)) {
+          response = jsonResponse({ metas: [], error: 'Catalog not found' }, 'no-store', 404);
         } else {
-          const manifestMatch = path.match(/^\/([^/]+)\/manifest\.json$/);
-          if (manifestMatch) {
-            const userConfig = decodeConfig(manifestMatch[1]);
-            response = jsonResponse(buildManifest(userConfig), CACHE_CONTROL_MANIFEST);
+          let activeSagas = userConfig.sagas
+            .map((id) => SAGAS_BY_ID.get(id))
+            .filter((s): s is SagaDefinition => Boolean(s));
+
+          if (catalogId === 'springfield3000-simpsons') {
+            activeSagas = activeSagas.filter((s) => s.universe === 'simpsons');
+          } else if (catalogId === 'springfield3000-futurama') {
+            activeSagas = activeSagas.filter((s) => s.universe === 'futurama');
+          } else if (catalogId === 'springfield3000-crossover') {
+            activeSagas = activeSagas.filter((s) => s.universe === 'crossover');
           }
-          // 6. Catalog Routes: supports dots in extras and validates catalogId
-          else {
-            const catalogMatch =
-              path.match(/^\/([^/]+)\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/) ??
-              path.match(/^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/);
 
-            if (catalogMatch) {
-              const hasConfigSegment = catalogMatch.length === 4;
-              const userConfig = hasConfigSegment
-                ? decodeConfig(catalogMatch[1])
-                : decodeConfig();
-              const catalogId = hasConfigSegment ? catalogMatch[2] : catalogMatch[1];
+          const metas: StremioMetaPreview[] = activeSagas.map((saga) =>
+            toMetaPreview(saga, userConfig.lang)
+          );
 
-              // Supported catalog IDs (official + backward-compatible filters)
-              const allowedCatalogs = new Set([
-                'springfield3000-all',
-                'springfield3000-simpsons',
-                'springfield3000-futurama',
-                'springfield3000-crossover',
-              ]);
-
-              if (!allowedCatalogs.has(catalogId)) {
-                response = jsonResponse(
-                  { metas: [], error: 'Catalog not found' },
-                  'no-store',
-                  404
-                );
-              } else {
-                let activeSagas = userConfig.sagas
-                  .map((id) => SAGAS_BY_ID.get(id))
-                  .filter((s): s is SagaDefinition => Boolean(s));
-
-                if (catalogId === 'springfield3000-simpsons') {
-                  activeSagas = activeSagas.filter((s) => s.universe === 'simpsons');
-                } else if (catalogId === 'springfield3000-futurama') {
-                  activeSagas = activeSagas.filter((s) => s.universe === 'futurama');
-                } else if (catalogId === 'springfield3000-crossover') {
-                  activeSagas = activeSagas.filter((s) => s.universe === 'crossover');
-                }
-
-                const metas: StremioMetaPreview[] = activeSagas.map((saga) =>
-                  toMetaPreview(saga, userConfig.lang)
-                );
-
-                response = jsonResponse({ metas }, CACHE_CONTROL_META);
-              }
-            }
-            // 7. Meta Detail Routes: safe lookup using Map
-            else {
-              const metaMatch =
-                path.match(/^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/) ??
-                path.match(/^\/meta\/series\/([^/.]+)\.json$/);
-
-              if (metaMatch) {
-                const hasConfigSegment = metaMatch.length === 3;
-                const userConfig = hasConfigSegment
-                  ? decodeConfig(metaMatch[1])
-                  : decodeConfig();
-                const sagaId = hasConfigSegment ? metaMatch[2] : metaMatch[1];
-
-                const saga = SAGAS_BY_ID.get(sagaId);
-                if (!saga) {
-                  response = jsonResponse(
-                    { meta: null, error: 'Saga not found' },
-                    'no-store',
-                    404
-                  );
-                } else {
-                  const meta = toMetaDetail(saga, userConfig.lang);
-                  response = jsonResponse({ meta }, CACHE_CONTROL_META);
-                }
-              } else {
-                response = jsonResponse(
-                  {
-                    error: 'Not Found',
-                    message:
-                      'Visit /configure to customize and install the Springfield 3000 Stremio Addon.',
-                  },
-                  'no-store',
-                  404
-                );
-              }
-            }
-          }
+          response = jsonResponse({ metas }, CACHE_CONTROL_META);
         }
       }
+      // 4.4 Meta Detail Routes
+      else if (
+        /^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/.test(path) ||
+        /^\/meta\/series\/([^/.]+)\.json$/.test(path)
+      ) {
+        const match =
+          path.match(/^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/) ??
+          path.match(/^\/meta\/series\/([^/.]+)\.json$/)!;
 
-      // 8. Cache response in Edge if applicable
+        const hasConfigSegment = match.length === 3;
+        const userConfig = hasConfigSegment ? decodeConfig(match[1]) : decodeConfig();
+        const sagaId = hasConfigSegment ? match[2] : match[1];
+
+        const saga = SAGAS_BY_ID.get(sagaId);
+        if (!saga) {
+          response = jsonResponse({ meta: null, error: 'Saga not found' }, 'no-store', 404);
+        } else {
+          const meta = toMetaDetail(saga, userConfig.lang);
+          response = jsonResponse({ meta }, CACHE_CONTROL_META);
+        }
+      }
+      // 4.5 Fallback 404
+      else {
+        response = jsonResponse(
+          {
+            error: 'Not Found',
+            message: 'Visit /configure to customize and install the Springfield 3000 Stremio Addon.',
+          },
+          'no-store',
+          404
+        );
+      }
+
+      // 5. Save in Edge Cache if cacheable
       if (
         cache &&
         request.method === 'GET' &&
         response.status === 200 &&
         ctx &&
-        typeof ctx.waitUntil === 'function'
+        typeof ctx.waitUntil === 'function' &&
+        !path.endsWith('/configure') &&
+        path !== '/'
       ) {
-        ctx.waitUntil(cache.put(request, response.clone()));
+        ctx.waitUntil(cache.put(cacheKey, response.clone()));
       }
 
       return response;
