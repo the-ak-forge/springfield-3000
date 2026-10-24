@@ -107,3 +107,7 @@ export interface StremioVideo {
 export interface StremioMetaDetail extends StremioMetaPreview {
   videos: StremioVideo[];
 }
+
+export interface WorkerEnv {
+  ASSETS?: Fetcher;
+}

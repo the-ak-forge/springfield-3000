@@ -7,10 +7,11 @@ import {
   StremioMetaPreview,
   StremioVideo,
   UserConfig,
+  WorkerEnv,
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.10';
+export const ADDON_VERSION = '1.0.11';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +28,7 @@ const SECURITY_HEADERS: Record<string, string> = {
 const HTML_SECURITY_HEADERS: Record<string, string> = {
   ...SECURITY_HEADERS,
   'Content-Security-Policy':
-    "default-src 'self'; img-src * data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none';",
+    "default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';",
 };
 
 const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
@@ -218,7 +219,7 @@ export function htmlResponse(html: string, status = 200): Response {
 export default {
   async fetch(
     request: Request,
-    _env: unknown,
+    env: WorkerEnv = {},
     ctx?: { waitUntil: (promise: Promise<unknown>) => void }
   ): Promise<Response> {
     try {
@@ -342,7 +343,7 @@ export default {
           response = jsonResponse({ meta }, CACHE_CONTROL_META);
         }
       }
-      // 4.5 Dedicated Direct Poster Image Route (Bypasses 301 redirects & Stremio client quirks)
+      // 4.5 Dedicated Direct Poster Image Route (Cloudflare Static Assets with fallback)
       else if (
         (m =
           path.match(/^\/poster\/(es|en)\/([^/.]+)\.jpg$/) ??
@@ -360,25 +361,44 @@ export default {
           });
         } else {
           try {
-            // Cascade: 1. jsDelivr CDN -> 2. GitHub Raw -> 3. Original TMDB still
-            const candidateUrls = [
-              `https://cdn.jsdelivr.net/gh/the-ak-forge/springfield-3000@main/assets/posters/${posterLang}/${saga.id}.jpg`,
-              `https://raw.githubusercontent.com/the-ak-forge/springfield-3000/main/assets/posters/${posterLang}/${saga.id}.jpg`,
-              saga.poster,
-            ];
-
             let upstream: Response | null = null;
-            for (const cUrl of candidateUrls) {
+
+            // 1. Prioritize Cloudflare Workers Static Assets (Self-hosted, native edge delivery)
+            if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
               try {
-                const res = await fetch(cUrl, {
-                  headers: { Accept: 'image/webp,image/jpeg,image/*,*/*' },
-                });
-                if (res.ok) {
-                  upstream = res;
-                  break;
+                const assetReq = new Request(
+                  new URL(`/posters/${posterLang}/${saga.id}.jpg`, request.url).toString(),
+                  request
+                );
+                const assetRes = await env.ASSETS.fetch(assetReq);
+                if (assetRes.ok) {
+                  upstream = assetRes;
                 }
               } catch {
-                // Try next candidate
+                // Cascade if asset lookup throws
+              }
+            }
+
+            // 2. Cascade fallback: jsDelivr CDN -> GitHub Raw -> TMDB still
+            if (!upstream) {
+              const candidateUrls = [
+                `https://cdn.jsdelivr.net/gh/the-ak-forge/springfield-3000@main/assets/posters/${posterLang}/${saga.id}.jpg`,
+                `https://raw.githubusercontent.com/the-ak-forge/springfield-3000/main/assets/posters/${posterLang}/${saga.id}.jpg`,
+                saga.poster,
+              ];
+
+              for (const cUrl of candidateUrls) {
+                try {
+                  const res = await fetch(cUrl, {
+                    headers: { Accept: 'image/webp,image/jpeg,image/*,*/*' },
+                  });
+                  if (res.ok) {
+                    upstream = res;
+                    break;
+                  }
+                } catch {
+                  // Try next candidate
+                }
               }
             }
 
@@ -442,7 +462,7 @@ export default {
       return jsonResponse(
         {
           error: 'Internal Server Error',
-          message: err instanceof Error ? err.message : 'Unknown error',
+          message: 'An unexpected server error occurred.',
         },
         'no-store',
         500

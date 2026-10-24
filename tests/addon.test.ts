@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { SAGAS, SAGAS_BY_ID } from '../src/data/sagas';
 import worker, {
   ADDON_VERSION,
-  buildManifest,
   decodeConfig,
   safeDecodePath,
 } from '../src/index';
@@ -78,10 +77,10 @@ describe('Springfield 3000 Data Integrity', () => {
     expect(montyEp?.season).toBe(10);
     expect(montyEp?.episode).toBe(21);
 
-    // Why Must I Be a Crustacean in Love? is S02E07
+    // Why Must I Be a Crustacean in Love? is S02E09 in Cinemeta / IMDb broadcast order
     const crustaceanEp = romance.episodes.find((e) => e.title.en.includes('Crustacean'));
     expect(crustaceanEp?.season).toBe(2);
-    expect(crustaceanEp?.episode).toBe(7);
+    expect(crustaceanEp?.episode).toBe(9);
   });
 });
 
@@ -218,6 +217,28 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(invalidRes.status).toBe(404);
   });
 
+  it('should prioritize Cloudflare Workers Static Assets binding when available', async () => {
+    const mockAssets = {
+      fetch: async (req: Request) => {
+        const url = new URL(req.url);
+        if (url.pathname === '/posters/es/simpsons-bob-saga.jpg') {
+          return new Response('mock-jpg-data', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+        }
+        return new Response('Asset Not Found', { status: 404 });
+      },
+    };
+
+    const req = new Request('https://springfield-3000.workers.dev/poster/es/simpsons-bob-saga.jpg');
+    const res = await worker.fetch(req, { ASSETS: mockAssets as any });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/jpeg');
+    const text = await res.text();
+    expect(text).toBe('mock-jpg-data');
+  });
+
   it('should include version cache-busting query parameter in /configure', async () => {
     const req = new Request('https://springfield-3000.workers.dev/configure');
     const res = await worker.fetch(req, {});
@@ -281,7 +302,10 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
 
     const html = await res.text();
     expect(html).not.toContain('cdn.tailwindcss.com');
-    expect(res.headers.get('Content-Security-Policy')).toBeTruthy();
+    const csp = res.headers.get('Content-Security-Policy') || '';
+    expect(csp).toContain("base-uri 'none'");
+    expect(csp).toContain("form-action 'none'");
+    expect(csp).toContain("img-src 'self' data:");
     expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });

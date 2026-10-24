@@ -15,8 +15,8 @@
   * **16 The Simpsons Sagas:** Sideshow Bob Vendetta, Mr. Burns Dossier, Phil Hartman Tribute, Krusty Saga, Ned Flanders' Faith, Flashbacks, Future Visions, Mona Simpson, Meta-Fiction, Prestige Parodies, Itchy & Scratchy, Treehouse of Horror (I–XXXVII), Christmas Specials, World Travel, Homer's Jobs, and Lisa's Rebellion.
   * **15 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, Corporate Warfare (Mom vs. Planet Express), and The Four Epics (Season 5 Movies).
   * **1 Official Crossover:** *Simpsorama* (The Simpsons S26E06).
-* **Individual Posters:** Each collection features its own dedicated high-resolution artwork served directly via `/poster/:sagaId.jpg` with edge-caching and CORS.
-* **Native Stream Delegation:** Video IDs resolve to canonical IMDb identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`), allowing installed community scrapers (Torrentio, Debridio, etc.) to resolve playback streams automatically.
+* **Individual Vertical Posters:** Each collection features bespoke 2:3 vertical typography posters (`600x900`), self-hosted directly via Cloudflare Workers Static Assets at `/poster/:lang/:sagaId.jpg` with edge-caching and CORS.
+* **Canonical Cinemeta & IMDb Stream Delegation:** Video IDs resolve to canonical IMDb/Cinemeta identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`), ensuring scrapers (Torrentio, Debridio, etc.) automatically stream the exact correct episode.
 * **Bilingual Support (EN / ES):** Full English and Spanish localization for saga titles, episode names, and overviews.
 * **Interactive Web Configurator (`/configure`):** Clean, zero-dependency responsive dark interface where users can select their preferred sagas and language in one click.
 * **Serverless & Ultra-Fast:** Built with native Web Standards (`Request`, `Response`, `URL`) running edge-cached on Cloudflare Workers with zero heavy dependencies.
@@ -34,7 +34,7 @@
 ## 🛠️ Local Development
 
 ### Prerequisites
-* [Node.js](https://nodejs.org) (v20+)
+* [Node.js](https://nodejs.org) (v22.12+)
 * [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
 
 ### Setup
@@ -52,10 +52,16 @@ npm run dev
 
 Visit `http://localhost:8787/configure` in your browser.
 
-### Typecheck & Deploy
+### Typecheck, Tests & Build Posters
 ```bash
 # Verify TypeScript types
 npm run typecheck
+
+# Run Vitest test suite
+npm test
+
+# Regenerate bespoke 2:3 posters
+npm run posters:build
 
 # Deploy to Cloudflare Workers
 npm run deploy
@@ -67,13 +73,19 @@ npm run deploy
 
 ```text
 springfield3000/
+├── assets/
+│   └── posters/            # 64 curated 2:3 vertical posters (32 EN + 32 ES)
+├── scripts/
+│   └── generate-posters.js # Automated typography poster composition engine
 ├── src/
 │   ├── data/
-│   │   └── sagas.ts        # In-memory dataset of 32 sagas with bilingual metadata
+│   │   └── sagas.ts        # In-memory dataset of 32 sagas with canonical Cinemeta metadata
 │   ├── views/
-│   │   └── configure.ts    # Responsive TailwindCSS dark configurator UI
+│   │   └── configure.ts    # Responsive dark configurator UI
 │   ├── types.ts            # Stremio Addon Protocol v1 TypeScript definitions
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
+├── tests/
+│   └── addon.test.ts       # 26 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
 ├── wrangler.toml
@@ -82,6 +94,8 @@ springfield3000/
 
 ---
 
-## 📜 License
+## 📜 Disclaimer & License
 
-MIT License. Free to use, fork, and distribute.
+**Disclaimer:** *Springfield 3000* is an unofficial, non-commercial fan project created for educational and community curation purposes under Fair Use. All character names, images, and series trademarks are property of The Walt Disney Company / 20th Television (*The Simpsons*) and The Curiosity Company / 20th Television (*Futurama*). This addon does not host or stream media content.
+
+The addon codebase is licensed under the **MIT License**.

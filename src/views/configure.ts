@@ -10,7 +10,7 @@ export function escHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.10'): string {
+export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.11'): string {
   const defaultConfig: UserConfig = initialConfig ?? {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),
@@ -244,6 +244,7 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
         copyBtn: '📋 Copy Link',
         copiedBtn: '✅ Copied!',
         installBtn: '🚀 Install Addon',
+        selectAtLeastOne: '⚠️ Select at least 1 saga',
         readyTitle: 'Ready to watch',
         readyDesc: 'Click Install to open in Stremio. (If already installed, uninstall it first in My Addons to force poster refresh).',
         selectedCount: (n, total) => n + ' of ' + total + ' selected',
@@ -273,6 +274,7 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
         copyBtn: '📋 Copiar Enlace',
         copiedBtn: '✅ ¡Copiado!',
         installBtn: '🚀 Instalar Addon',
+        selectAtLeastOne: '⚠️ Selecciona al menos 1 saga',
         readyTitle: 'Listo para ver',
         readyDesc: 'Haz clic en Instalar para abrir en Stremio. (Si ya lo tenías instalado, desinstálalo primero en Mis Addons para refrescar las carátulas).',
         selectedCount: (n, total) => n + ' de ' + total + ' activas',
@@ -317,19 +319,35 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
     function updateUrlsAndCounters() {
       const t = I18N[state.lang];
       const orderedIds = SAGAS_DATA.map(s => s.id).filter(id => state.selected.has(id));
-      const payload = {
-        lang: state.lang,
-        sagas: orderedIds
-      };
-      const encoded = encodeConfigBase64Url(payload);
-      const host = window.location.host;
-      const protocol = window.location.protocol;
-      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION + '&t=' + Date.now();
-      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION + '&t=' + Date.now();
-
       const installBtn = document.getElementById('btn-install');
-      installBtn.href = stremioManifest;
-      installBtn.textContent = t.installBtn;
+      const copyBtn = document.getElementById('btn-copy');
+
+      if (orderedIds.length === 0) {
+        manifestUrl = '';
+        installBtn.removeAttribute('href');
+        installBtn.textContent = t.selectAtLeastOne;
+        installBtn.style.opacity = '0.5';
+        installBtn.style.pointerEvents = 'none';
+        copyBtn.style.opacity = '0.5';
+        copyBtn.style.pointerEvents = 'none';
+      } else {
+        const payload = {
+          lang: state.lang,
+          sagas: orderedIds
+        };
+        const encoded = encodeConfigBase64Url(payload);
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION;
+        const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION;
+
+        installBtn.href = stremioManifest;
+        installBtn.textContent = t.installBtn;
+        installBtn.style.opacity = '1';
+        installBtn.style.pointerEvents = 'auto';
+        copyBtn.style.opacity = '1';
+        copyBtn.style.pointerEvents = 'auto';
+      }
 
       document.getElementById('selection-counter').textContent = t.selectedCount(
         orderedIds.length,
@@ -399,10 +417,11 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
           checkbox.addEventListener('change', (e) => {
             if (e.target.checked) {
               state.selected.add(saga.id);
+              label.classList.add('checked');
             } else {
               state.selected.delete(saga.id);
+              label.classList.remove('checked');
             }
-            renderAccordions();
             updateUrlsAndCounters();
           });
 
@@ -417,6 +436,19 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
       updateUrlsAndCounters();
     }
 
+    function syncCheckboxes() {
+      document.querySelectorAll('.saga-checkbox').forEach(cb => {
+        const sagaId = cb.getAttribute('data-saga-id');
+        const isChecked = state.selected.has(sagaId);
+        cb.checked = isChecked;
+        const parent = cb.closest('.saga-item');
+        if (parent) {
+          parent.classList.toggle('checked', isChecked);
+        }
+      });
+      updateUrlsAndCounters();
+    }
+
     document.querySelectorAll('.btn-lang').forEach(btn => {
       btn.addEventListener('click', () => {
         state.lang = btn.getAttribute('data-lang');
@@ -426,21 +458,26 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
 
     document.getElementById('btn-select-all').addEventListener('click', () => {
       SAGAS_DATA.forEach(s => state.selected.add(s.id));
-      renderAccordions();
+      syncCheckboxes();
     });
 
     document.getElementById('btn-select-none').addEventListener('click', () => {
       state.selected.clear();
-      renderAccordions();
+      syncCheckboxes();
     });
 
     document.getElementById('btn-copy').addEventListener('click', async () => {
+      if (!manifestUrl) return;
       const copyBtn = document.getElementById('btn-copy');
-      await navigator.clipboard.writeText(manifestUrl);
-      copyBtn.textContent = I18N[state.lang].copiedBtn;
-      setTimeout(() => {
-        copyBtn.textContent = I18N[state.lang].copyBtn;
-      }, 2000);
+      try {
+        await navigator.clipboard.writeText(manifestUrl);
+        copyBtn.textContent = I18N[state.lang].copiedBtn;
+        setTimeout(() => {
+          copyBtn.textContent = I18N[state.lang].copyBtn;
+        }, 2000);
+      } catch {
+        // Ignore clipboard permission denial
+      }
     });
 
     renderAccordions();

@@ -172,6 +172,7 @@ async function main() {
 
   console.log(`🚀 Generating posters for ${SAGAS.length} sagas in 2 languages (64 posters total)...`);
 
+  let errorCount = 0;
   for (let i = 0; i < SAGAS.length; i++) {
     const saga = SAGAS[i];
     console.log(`[${i + 1}/${SAGAS.length}] Processing ${saga.id}...`);
@@ -190,11 +191,20 @@ async function main() {
       const enPoster = await renderPoster(saga, i, 'en', stillResized);
       fs.writeFileSync(path.join(enDir, `${saga.id}.jpg`), enPoster);
     } catch (err) {
+      errorCount++;
       console.error(`❌ Error generating poster for ${saga.id}:`, err.message);
     }
+  }
+
+  if (errorCount > 0) {
+    console.error(`❌ Poster generation failed with ${errorCount} error(s).`);
+    process.exit(1);
   }
 
   console.log('✅ All 64 posters generated successfully in assets/posters/');
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error('Fatal poster build error:', err);
+  process.exit(1);
+});
