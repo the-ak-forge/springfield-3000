@@ -11,7 +11,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.13';
+export const ADDON_VERSION = '1.0.14';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -162,11 +162,26 @@ export function toMetaDetail(
 
   const videos: StremioVideo[] = saga.episodes.map((ep, index) => {
     const showImdb = ep.imdbId ?? saga.defaultImdbId;
-    const canonicalVideoId = `${showImdb}:${ep.season}:${ep.episode}`;
-    const codeLabel = `${prefixTag}${String(ep.season).padStart(2, '0')}E${String(ep.episode).padStart(2, '0')}`;
+    const isMovie = Boolean(ep.isMovie);
+    const canonicalVideoId = isMovie ? showImdb : `${showImdb}:${ep.season}:${ep.episode}`;
+    const codeLabel = isMovie
+      ? (lang === 'en' ? 'Movie' : 'Película')
+      : `${prefixTag}${String(ep.season).padStart(2, '0')}E${String(ep.episode).padStart(2, '0')}`;
 
     // Synthetic chronological release date so Stremio preserves exact saga order
     const releasedDate = new Date(Date.UTC(2000, 0, index + 1)).toISOString();
+
+    const overviewDefault = isMovie
+      ? (lang === 'en'
+          ? `${saga.name.en} — Feature Film (${showImdb}).`
+          : `${saga.name.es} — Largometraje (${showImdb}).`)
+      : (lang === 'en'
+          ? `${saga.name.en} — Original episode ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`
+          : `${saga.name.es} — Episodio original ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`);
+
+    const thumbnail = isMovie
+      ? (ep.thumbnail ?? `https://images.metahub.space/background/medium/${showImdb}/img`)
+      : `https://episodes.metahub.space/${showImdb}/${ep.season}/${ep.episode}/w780.jpg`;
 
     return {
       id: canonicalVideoId,
@@ -174,12 +189,8 @@ export function toMetaDetail(
       season: 1,
       episode: index + 1,
       released: ep.released ?? releasedDate,
-      overview:
-        ep.overview?.[lang] ??
-        (lang === 'en'
-          ? `${saga.name.en} — Original episode ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`
-          : `${saga.name.es} — Episodio original ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`),
-      thumbnail: `https://episodes.metahub.space/${showImdb}/${ep.season}/${ep.episode}/w780.jpg`,
+      overview: ep.overview?.[lang] ?? overviewDefault,
+      thumbnail,
     };
   });
 

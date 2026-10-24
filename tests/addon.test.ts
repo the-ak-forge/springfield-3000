@@ -299,6 +299,32 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.meta.videos[0].episode).toBe(1);
   });
 
+  it('should return movie IMDb IDs for Futurama Four Epics saga to match full-length feature films', async () => {
+    const reqEn = new Request(
+      'https://springfield-3000.workers.dev/meta/series/futurama-four-epics.json'
+    );
+    const resEn = await worker.fetch(reqEn, {});
+    expect(resEn.status).toBe(200);
+
+    const jsonEn = (await resEn.json()) as any;
+    expect(jsonEn.meta.id).toBe('futurama-four-epics');
+    expect(jsonEn.meta.videos.length).toBe(4);
+    expect(jsonEn.meta.videos[0].id).toBe('tt0471711');
+    expect(jsonEn.meta.videos[0].title).toBe('[Movie] Bender’s Big Score');
+    expect(jsonEn.meta.videos[1].id).toBe('tt1054485');
+    expect(jsonEn.meta.videos[2].id).toBe('tt1054486');
+    expect(jsonEn.meta.videos[3].id).toBe('tt1054487');
+
+    // Test with Spanish config segment
+    const esSegment = toBase64Url({ lang: 'es', sagas: ['futurama-four-epics'] });
+    const reqEs = new Request(
+      `https://springfield-3000.workers.dev/${esSegment}/meta/series/futurama-four-epics.json`
+    );
+    const resEs = await worker.fetch(reqEs, {});
+    const jsonEs = (await resEs.json()) as any;
+    expect(jsonEs.meta.videos[0].title).toBe('[Película] El gran golpe de Bender');
+  });
+
   it('should return 404 for prototype pollution keys like constructor or __proto__', async () => {
     const req1 = new Request(
       'https://springfield-3000.workers.dev/meta/series/constructor.json'

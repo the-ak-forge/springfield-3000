@@ -2,7 +2,7 @@ export type Language = 'en' | 'es';
 
 export type Universe = 'simpsons' | 'futurama' | 'crossover';
 
-export type ShowImdbId = 'tt0096697' | 'tt0149460';
+export type ShowImdbId = 'tt0096697' | 'tt0149460' | string;
 
 export interface LocalizedText {
   en: string;
@@ -10,13 +10,15 @@ export interface LocalizedText {
 }
 
 export interface SagaEpisodeRef {
-  /** Override show IMDb ID if different from the saga's primary show (useful for crossovers) */
+  /** Override show IMDb ID if different from the saga's primary show (useful for crossovers and movies) */
   imdbId?: ShowImdbId;
   season: number;
   episode: number;
   title: LocalizedText;
   overview?: LocalizedText;
   released?: string;
+  isMovie?: boolean;
+  thumbnail?: string;
 }
 
 export interface SagaDefinition {
