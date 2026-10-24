@@ -40,7 +40,7 @@
 ### Setup
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/springfield-3000.git
+git clone https://github.com/the-ak-forge/springfield-3000.git
 cd springfield-3000
 
 # Install development dependencies
