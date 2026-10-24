@@ -11,7 +11,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.11';
+export const ADDON_VERSION = '1.0.12';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -366,12 +366,10 @@ export default {
             // 1. Prioritize Cloudflare Workers Static Assets (Self-hosted, native edge delivery)
             if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
               try {
-                const assetReq = new Request(
-                  new URL(`/posters/${posterLang}/${saga.id}.jpg`, request.url).toString(),
-                  request
-                );
+                const assetUrl = new URL(`/posters/${posterLang}/${saga.id}.jpg`, request.url);
+                const assetReq = new Request(assetUrl.toString());
                 const assetRes = await env.ASSETS.fetch(assetReq);
-                if (assetRes.ok) {
+                if (assetRes.ok || assetRes.status === 304) {
                   upstream = assetRes;
                 }
               } catch {

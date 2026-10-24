@@ -13,7 +13,7 @@
 
 * **32 Curated Sagas:**
   * **16 The Simpsons Sagas:** Sideshow Bob Vendetta, Mr. Burns Dossier, Phil Hartman Tribute, Krusty Saga, Ned Flanders' Faith, Flashbacks, Future Visions, Mona Simpson, Meta-Fiction, Prestige Parodies, Itchy & Scratchy, Treehouse of Horror (I–XXXVII), Christmas Specials, World Travel, Homer's Jobs, and Lisa's Rebellion.
-  * **15 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, Corporate Warfare (Mom vs. Planet Express), and The Four Epics (Season 5 Movies).
+  * **15 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, Corporate Warfare (Mom vs. Planet Express), and The Four Epics (The Feature Movies).
   * **1 Official Crossover:** *Simpsorama* (The Simpsons S26E06).
 * **Individual Vertical Posters:** Each collection features bespoke 2:3 vertical typography posters (`600x900`), self-hosted directly via Cloudflare Workers Static Assets at `/poster/:lang/:sagaId.jpg` with edge-caching and CORS.
 * **Canonical Cinemeta & IMDb Stream Delegation:** Video IDs resolve to canonical IMDb/Cinemeta identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`), ensuring scrapers (Torrentio, Debridio, etc.) automatically stream the exact correct episode.
@@ -96,6 +96,6 @@ springfield3000/
 
 ## 📜 Disclaimer & License
 
-**Disclaimer:** *Springfield 3000* is an unofficial, non-commercial fan project created for educational and community curation purposes under Fair Use. All character names, images, and series trademarks are property of The Walt Disney Company / 20th Television (*The Simpsons*) and The Curiosity Company / 20th Television (*Futurama*). This addon does not host or stream media content.
+**Disclaimer:** *Springfield 3000* is an unofficial, open-source community curation addon for Stremio. It organizes public episode identifiers and metadata for editorial and organizational purposes. All series trademarks, characters, artwork, and associated intellectual property remain the property of their respective copyright holders (The Walt Disney Company, 20th Television, and The Curiosity Company). This addon does not store, host, or transmit video or audio files; all stream playback requests are resolved by independent, user-installed scrapers.
 
 The addon codebase is licensed under the **MIT License**.

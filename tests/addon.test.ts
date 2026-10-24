@@ -6,6 +6,11 @@ import worker, {
   safeDecodePath,
 } from '../src/index';
 
+function toBase64Url(obj: unknown): string {
+  const json = JSON.stringify(obj);
+  return btoa(json).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 describe('Springfield 3000 Data Integrity', () => {
   it('should have exactly 32 curated sagas', () => {
     expect(SAGAS.length).toBe(32);
@@ -100,7 +105,7 @@ describe('Configuration & Parser Resilience', () => {
       lang: 'en',
       sagas: ['simpsons-bob-saga', 'simpsons-bob-saga', 'simpsons-bob-saga', 'futurama-tearjerkers'],
     };
-    const b64 = Buffer.from(JSON.stringify(rawObj)).toString('base64url');
+    const b64 = toBase64Url(rawObj);
     const decoded = decodeConfig(b64);
 
     expect(decoded.sagas).toEqual(['simpsons-bob-saga', 'futurama-tearjerkers']);
@@ -111,7 +116,7 @@ describe('Configuration & Parser Resilience', () => {
       lang: 'es',
       sagas: ['simpsons-bob-saga', 'constructor', '__proto__', 'invalid-id-xyz'],
     };
-    const b64 = Buffer.from(JSON.stringify(rawObj)).toString('base64url');
+    const b64 = toBase64Url(rawObj);
     const decoded = decodeConfig(b64);
 
     expect(decoded.lang).toBe('es');
@@ -123,7 +128,7 @@ describe('Configuration & Parser Resilience', () => {
       lang: 'en',
       sagas: ['invalid-1', 'invalid-2'],
     };
-    const b64 = Buffer.from(JSON.stringify(rawObj)).toString('base64url');
+    const b64 = toBase64Url(rawObj);
     const decoded = decodeConfig(b64);
 
     expect(decoded.sagas.length).toBe(32);

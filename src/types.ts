@@ -109,5 +109,7 @@ export interface StremioMetaDetail extends StremioMetaPreview {
 }
 
 export interface WorkerEnv {
-  ASSETS?: Fetcher;
+  ASSETS?: {
+    fetch: (request: Request | string) => Promise<Response>;
+  };
 }
