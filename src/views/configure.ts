@@ -323,8 +323,8 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
       const encoded = encodeConfigBase64Url(payload);
       const host = window.location.host;
       const protocol = window.location.protocol;
-      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.7';
-      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.7';
+      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.8';
+      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.8';
 
       const installBtn = document.getElementById('btn-install');
       installBtn.href = stremioManifest;
@@ -385,7 +385,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
 
           label.innerHTML =
             '<input type="checkbox" data-saga-id="' + esc(saga.id) + '" ' + (isChecked ? 'checked' : '') + ' class="saga-checkbox" />' +
-            '<img src="/poster/' + esc(saga.id) + '.jpg" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
+            '<img src="/poster/' + esc(state.lang) + '/' + esc(saga.id) + '.jpg" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
             '<div class="saga-body">' +
               '<div class="saga-header">' +
                 '<span class="saga-name">' + esc(title) + '</span>' +

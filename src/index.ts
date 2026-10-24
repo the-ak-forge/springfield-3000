@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.7';
+export const ADDON_VERSION = '1.0.8';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -135,7 +135,7 @@ export function toMetaPreview(
   baseUrl?: string
 ): StremioMetaPreview {
   const origin = baseUrl ? baseUrl.replace(/\/+$/, '') : 'https://springfield-3000.ak-forge.workers.dev';
-  const posterUrl = `${origin}/poster/${saga.id}.jpg`;
+  const posterUrl = `${origin}/poster/${lang}/${saga.id}.jpg`;
 
   return {
     id: saga.id,
@@ -341,9 +341,16 @@ export default {
         }
       }
       // 4.5 Dedicated Direct Poster Image Route (Bypasses 301 redirects & Stremio client quirks)
-      else if ((m = path.match(/^\/poster\/([^/.]+)\.jpg$/))) {
-        const sagaId = m[1];
+      else if (
+        (m =
+          path.match(/^\/poster\/(es|en)\/([^/.]+)\.jpg$/) ??
+          path.match(/^\/poster\/([^/.]+)\.jpg$/))
+      ) {
+        const hasLang = m.length === 3;
+        const posterLang: Language = hasLang ? (m[1] as Language) : 'en';
+        const sagaId = hasLang ? m[2] : m[1];
         const saga = SAGAS_BY_ID.get(sagaId);
+
         if (!saga) {
           response = new Response('Poster Not Found', {
             status: 404,
@@ -351,12 +358,31 @@ export default {
           });
         } else {
           try {
-            const upstream = await fetch(saga.poster, {
-              headers: { Accept: 'image/webp,image/jpeg,image/*,*/*' },
-            });
-            if (!upstream.ok) {
+            // Cascade: 1. jsDelivr CDN -> 2. GitHub Raw -> 3. Original TMDB still
+            const candidateUrls = [
+              `https://cdn.jsdelivr.net/gh/the-ak-forge/springfield-3000@main/assets/posters/${posterLang}/${saga.id}.jpg`,
+              `https://raw.githubusercontent.com/the-ak-forge/springfield-3000/main/assets/posters/${posterLang}/${saga.id}.jpg`,
+              saga.poster,
+            ];
+
+            let upstream: Response | null = null;
+            for (const cUrl of candidateUrls) {
+              try {
+                const res = await fetch(cUrl, {
+                  headers: { Accept: 'image/webp,image/jpeg,image/*,*/*' },
+                });
+                if (res.ok) {
+                  upstream = res;
+                  break;
+                }
+              } catch {
+                // Try next candidate
+              }
+            }
+
+            if (!upstream || !upstream.ok) {
               response = new Response('Upstream Image Error', {
-                status: upstream.status,
+                status: 502,
                 headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CORS_HEADERS, ...SECURITY_HEADERS },
               });
             } else {
