@@ -12,16 +12,16 @@ function toBase64Url(obj: unknown): string {
 }
 
 describe('Springfield 3000 Data Integrity', () => {
-  it('should have exactly 32 curated sagas', () => {
-    expect(SAGAS.length).toBe(32);
-    expect(SAGAS_BY_ID.size).toBe(32);
+  it('should have exactly 31 curated sagas', () => {
+    expect(SAGAS.length).toBe(31);
+    expect(SAGAS_BY_ID.size).toBe(31);
 
     const simpsons = SAGAS.filter((s) => s.universe === 'simpsons');
     const futurama = SAGAS.filter((s) => s.universe === 'futurama');
     const crossover = SAGAS.filter((s) => s.universe === 'crossover');
 
     expect(simpsons.length).toBe(16);
-    expect(futurama.length).toBe(15);
+    expect(futurama.length).toBe(14);
     expect(crossover.length).toBe(1);
   });
 
@@ -93,11 +93,11 @@ describe('Configuration & Parser Resilience', () => {
   it('should decode empty or default string to full English catalog', () => {
     const fromEmpty = decodeConfig('');
     expect(fromEmpty.lang).toBe('en');
-    expect(fromEmpty.sagas.length).toBe(32);
+    expect(fromEmpty.sagas.length).toBe(31);
 
     const fromDefault = decodeConfig('default');
     expect(fromDefault.lang).toBe('en');
-    expect(fromDefault.sagas.length).toBe(32);
+    expect(fromDefault.sagas.length).toBe(31);
   });
 
   it('should cleanly parse config containing version field v for cache-busting', () => {
@@ -144,13 +144,13 @@ describe('Configuration & Parser Resilience', () => {
     const b64 = toBase64Url(rawObj);
     const decoded = decodeConfig(b64);
 
-    expect(decoded.sagas.length).toBe(32);
+    expect(decoded.sagas.length).toBe(31);
   });
 
   it('should gracefully handle malformed base64', () => {
     const decoded = decodeConfig('!!!not-valid-base64???');
     expect(decoded.lang).toBe('en');
-    expect(decoded.sagas.length).toBe(32);
+    expect(decoded.sagas.length).toBe(31);
   });
 
   it('should handle malformed percent-encoding in paths without throwing', () => {
@@ -203,7 +203,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(res.status).toBe(200);
 
     const json = (await res.json()) as any;
-    expect(json.metas.length).toBe(32);
+    expect(json.metas.length).toBe(31);
     expect(json.metas[0].poster).toContain('/poster/en/simpsons-bob-saga.jpg');
     expect(json.metas[0].background).toBeTruthy();
     expect(json.metas[0].posterShape).toBe('poster');
@@ -277,7 +277,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(res.status).toBe(200);
 
     const json = (await res.json()) as any;
-    expect(json.metas.length).toBe(32);
+    expect(json.metas.length).toBe(31);
   });
 
   it('should return 404 for unknown catalog IDs', async () => {
@@ -303,30 +303,12 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.meta.videos[0].episode).toBe(1);
   });
 
-  it('should return valid series episode IDs for Futurama Four Epics matching Cinemeta', async () => {
-    const reqEn = new Request(
+  it('should return 404 for removed series saga futurama-four-epics as it has moved to movies', async () => {
+    const req = new Request(
       'https://springfield-3000.workers.dev/meta/series/futurama-four-epics.json'
     );
-    const resEn = await worker.fetch(reqEn, {});
-    expect(resEn.status).toBe(200);
-
-    const jsonEn = (await resEn.json()) as any;
-    expect(jsonEn.meta.id).toBe('futurama-four-epics');
-    expect(jsonEn.meta.videos.length).toBe(4);
-    expect(jsonEn.meta.videos[0].id).toBe('tt0149460:6:1');
-    expect(jsonEn.meta.videos[0].title).toBe('[S06E01] Bender’s Big Score');
-    expect(jsonEn.meta.videos[1].id).toBe('tt0149460:6:2');
-    expect(jsonEn.meta.videos[2].id).toBe('tt0149460:6:3');
-    expect(jsonEn.meta.videos[3].id).toBe('tt0149460:6:4');
-
-    // Test with Spanish config segment
-    const esSegment = toBase64Url({ lang: 'es', sagas: ['futurama-four-epics'] });
-    const reqEs = new Request(
-      `https://springfield-3000.workers.dev/${esSegment}/meta/series/futurama-four-epics.json`
-    );
-    const resEs = await worker.fetch(reqEs, {});
-    const jsonEs = (await resEs.json()) as any;
-    expect(jsonEs.meta.videos[0].title).toBe('[T06E01] El gran golpe de Bender');
+    const res = await worker.fetch(req, {});
+    expect(res.status).toBe(404);
   });
 
   it('should return movie catalog metas and individual movie meta detail', async () => {

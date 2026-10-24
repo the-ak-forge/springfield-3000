@@ -832,30 +832,6 @@ export const SAGAS: SagaDefinition[] = [
       { season: 10, episode: 7, title: { en: 'Calculon 2.0', es: 'Calculón 2.0' } },
     ],
   },
-  {
-    id: 'futurama-four-epics',
-    universe: 'futurama',
-    defaultImdbId: FUTURAMA_IMDB,
-    name: {
-      en: '31. The Four Epics (The Feature Movies)',
-      es: '31. Las Cuatro Epopeyas (Las Películas)',
-    },
-    description: {
-      en: 'The four complete feature-length films: Bender’s Big Score, The Beast with a Billion Backs, Bender’s Game, and Into the Wild Green Yonder.',
-      es: 'Las cuatro películas completas de larga duración: El gran golpe de Bender, La bestia con un millón de espaldas, El juego de Bender y Hacia la verde inmensidad.',
-    },
-    poster: epImg(FUTURAMA_IMDB, 6, 1),
-    background: epImg(FUTURAMA_IMDB, 6, 1),
-    genres: ['Animation', 'Sci-Fi', 'Adventure', 'Comedy'],
-    releaseInfo: '2007–2009',
-    imdbRating: '8.5',
-    episodes: [
-      { season: 6, episode: 1, title: { en: 'Bender’s Big Score', es: 'El gran golpe de Bender' } },
-      { season: 6, episode: 2, title: { en: 'The Beast with a Billion Backs', es: 'La bestia con un millón de espaldas' } },
-      { season: 6, episode: 3, title: { en: 'Bender’s Game', es: 'El juego de Bender' } },
-      { season: 6, episode: 4, title: { en: 'Into the Wild Green Yonder', es: 'Hacia la verde inmensidad' } },
-    ],
-  },
 
   // ==========================================
   // C. CROSSOVER
