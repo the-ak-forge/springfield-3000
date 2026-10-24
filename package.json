@@ -1,6 +1,6 @@
 {
   "name": "springfield-3000",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Serverless Stremio Addon for The Simpsons & Futurama curated sagas, story arcs, and anthologies (Bilingual EN/ES)",
   "private": true,
   "engines": {

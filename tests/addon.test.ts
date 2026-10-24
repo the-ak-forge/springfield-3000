@@ -177,7 +177,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(res.status).toBe(405);
   });
 
-  it('should serve a valid manifest with single unified catalog and stremioAddonsConfig', async () => {
+  it('should serve a valid manifest with series and movie catalogs and stremioAddonsConfig', async () => {
     const req = new Request('https://springfield-3000.workers.dev/manifest.json');
     const res = await worker.fetch(req, {});
     expect(res.status).toBe(200);
@@ -185,8 +185,12 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     const json = (await res.json()) as any;
     expect(json.id).toBe('org.springfield3000.curated.addon');
     expect(json.version).toBe(ADDON_VERSION);
-    expect(json.catalogs.length).toBe(1);
+    expect(json.types).toEqual(['series', 'movie']);
+    expect(json.catalogs.length).toBe(2);
     expect(json.catalogs[0].id).toBe('springfield3000-sagas');
+    expect(json.catalogs[0].type).toBe('series');
+    expect(json.catalogs[1].id).toBe('springfield3000-movies');
+    expect(json.catalogs[1].type).toBe('movie');
     expect(json.stremioAddonsConfig.issuer).toBe('https://stremio-addons.net');
     expect(json.stremioAddonsConfig.signature).toBeTruthy();
   });
@@ -323,6 +327,41 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     const resEs = await worker.fetch(reqEs, {});
     const jsonEs = (await resEs.json()) as any;
     expect(jsonEs.meta.videos[0].title).toBe('[T06E01] El gran golpe de Bender');
+  });
+
+  it('should return movie catalog metas and individual movie meta detail', async () => {
+    // 1. Movie catalog route
+    const catReq = new Request(
+      'https://springfield-3000.workers.dev/catalog/movie/springfield3000-movies.json'
+    );
+    const catRes = await worker.fetch(catReq, {});
+    expect(catRes.status).toBe(200);
+
+    const catJson = (await catRes.json()) as any;
+    expect(catJson.metas.length).toBe(5);
+    expect(catJson.metas[0].id).toBe('tt0471711');
+    expect(catJson.metas[0].type).toBe('movie');
+    expect(catJson.metas[4].id).toBe('tt0462538');
+
+    // 2. Movie meta detail route (Bender's Big Score)
+    const metaReq = new Request(
+      'https://springfield-3000.workers.dev/meta/movie/tt0471711.json'
+    );
+    const metaRes = await worker.fetch(metaReq, {});
+    expect(metaRes.status).toBe(200);
+
+    const metaJson = (await metaRes.json()) as any;
+    expect(metaJson.meta.id).toBe('tt0471711');
+    expect(metaJson.meta.type).toBe('movie');
+    expect(metaJson.meta.name).toBe("Futurama: Bender's Big Score");
+    expect(metaJson.meta.videos).toBeUndefined();
+
+    // 3. Movie meta 404 for unknown movie ID
+    const notFoundReq = new Request(
+      'https://springfield-3000.workers.dev/meta/movie/tt99999999.json'
+    );
+    const notFoundRes = await worker.fetch(notFoundReq, {});
+    expect(notFoundRes.status).toBe(404);
   });
 
   it('should return 404 for prototype pollution keys like constructor or __proto__', async () => {

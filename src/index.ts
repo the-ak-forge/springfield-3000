@@ -1,6 +1,8 @@
+import { MOVIES, MOVIES_BY_ID } from './data/movies';
 import { SAGAS, SAGAS_BY_ID } from './data/sagas';
 import {
   Language,
+  MovieDefinition,
   SagaDefinition,
   StremioManifest,
   StremioMetaDetail,
@@ -11,7 +13,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.15';
+export const ADDON_VERSION = '1.0.16';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -97,6 +99,11 @@ export function buildManifest(config: UserConfig): StremioManifest {
       id: 'springfield3000-sagas',
       name: 'Springfield 3000',
     },
+    {
+      type: 'movie',
+      id: 'springfield3000-movies',
+      name: isEn ? 'Springfield 3000 (Movies)' : 'Springfield 3000 (Películas)',
+    },
   ];
 
   return {
@@ -104,21 +111,21 @@ export function buildManifest(config: UserConfig): StremioManifest {
     version: ADDON_VERSION,
     name: 'Springfield 3000',
     description: isEn
-      ? 'Curated thematic collections, chronological character arcs, and complete anthologies for The Simpsons (tt0096697) & Futurama (tt0149460). Updated through Oct 2026.'
-      : 'Colecciones temáticas curadas, arcos narrativos correlativos y antologías completas de Los Simpson (tt0096697) y Futurama (tt0149460). Actualizado a Octubre 2026.',
+      ? 'Curated thematic collections, chronological character arcs, and complete feature films for The Simpsons (tt0096697) & Futurama (tt0149460). Updated through Oct 2026.'
+      : 'Colecciones temáticas curadas, arcos narrativos correlativos y largometrajes completos de Los Simpson (tt0096697) y Futurama (tt0149460). Actualizado a Octubre 2026.',
     logo: 'https://images.metahub.space/logo/medium/tt0096697/img',
     background: 'https://images.metahub.space/background/medium/tt0149460/img',
-    types: ['series'],
+    types: ['series', 'movie'],
     catalogs,
     resources: [
       'catalog',
       {
         name: 'meta',
-        types: ['series'],
-        idPrefixes: ['simpsons-', 'futurama-', 'crossover-'],
+        types: ['series', 'movie'],
+        idPrefixes: ['simpsons-', 'futurama-', 'crossover-', 'tt'],
       },
     ],
-    idPrefixes: ['simpsons-', 'futurama-', 'crossover-'],
+    idPrefixes: ['simpsons-', 'futurama-', 'crossover-', 'tt'],
     behaviorHints: {
       configurable: true,
       configurationRequired: false,
@@ -128,6 +135,21 @@ export function buildManifest(config: UserConfig): StremioManifest {
       signature:
         'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..9RD_vDdhdzNkUVTWv-mHmw.EjXq7IDEle-w9UavH2Bnh3NzF_SX7c1wMHUpIQArJkJ03azC2ezpAS2YWUejlbWCs4dLKfsOmLp0z5q5seW34MWZxGdcfFe3E0DO4dWyzSgzI_gdQC7WBmztzoApDJq7.wm6OuwAeCIwoXKvBfKK2-Q',
     },
+  };
+}
+
+export function toMovieMeta(movie: MovieDefinition, lang: Language): StremioMetaDetail {
+  return {
+    id: movie.id,
+    type: 'movie',
+    name: movie.name[lang],
+    poster: movie.poster,
+    posterShape: 'poster',
+    background: movie.background,
+    description: movie.description[lang],
+    releaseInfo: movie.releaseInfo,
+    imdbRating: movie.imdbRating,
+    genres: movie.genres,
   };
 }
 
@@ -336,7 +358,24 @@ export default {
           response = jsonResponse({ metas }, CACHE_CONTROL_CATALOG);
         }
       }
-      // 4.4 Meta Detail Routes
+      // 4.3b Movie Catalog Routes
+      else if (
+        (m =
+          path.match(/^\/([^/]+)\/catalog\/movie\/([^/]+?)(?:\/([^/]+))?\.json$/) ??
+          path.match(/^\/catalog\/movie\/([^/]+?)(?:\/([^/]+))?\.json$/))
+      ) {
+        const hasConfigSegment = m.length === 4;
+        const userConfig = hasConfigSegment ? decodeConfig(m[1]) : decodeConfig();
+        const catalogId = hasConfigSegment ? m[2] : m[1];
+
+        if (catalogId !== 'springfield3000-movies') {
+          response = jsonResponse({ metas: [], error: 'Catalog not found' }, 'no-store', 404);
+        } else {
+          const metas = MOVIES.map((movie) => toMovieMeta(movie, userConfig.lang));
+          response = jsonResponse({ metas }, CACHE_CONTROL_CATALOG);
+        }
+      }
+      // 4.4 Series Meta Detail Routes
       else if (
         (m =
           path.match(/^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/) ??
@@ -351,6 +390,24 @@ export default {
           response = jsonResponse({ meta: null, error: 'Saga not found' }, 'no-store', 404);
         } else {
           const meta = toMetaDetail(saga, userConfig.lang, url.origin);
+          response = jsonResponse({ meta }, CACHE_CONTROL_META);
+        }
+      }
+      // 4.4b Movie Meta Detail Routes
+      else if (
+        (m =
+          path.match(/^\/([^/]+)\/meta\/movie\/([^/.]+)\.json$/) ??
+          path.match(/^\/meta\/movie\/([^/.]+)\.json$/))
+      ) {
+        const hasConfigSegment = m.length === 3;
+        const userConfig = hasConfigSegment ? decodeConfig(m[1]) : decodeConfig();
+        const movieId = hasConfigSegment ? m[2] : m[1];
+
+        const movie = MOVIES_BY_ID.get(movieId);
+        if (!movie) {
+          response = jsonResponse({ meta: null, error: 'Movie not found' }, 'no-store', 404);
+        } else {
+          const meta = toMovieMeta(movie, userConfig.lang);
           response = jsonResponse({ meta }, CACHE_CONTROL_META);
         }
       }

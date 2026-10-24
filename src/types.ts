@@ -35,6 +35,18 @@ export interface SagaDefinition {
   episodes: SagaEpisodeRef[];
 }
 
+export interface MovieDefinition {
+  id: string;
+  universe: Universe;
+  name: LocalizedText;
+  description: LocalizedText;
+  poster: string;
+  background: string;
+  genres: string[];
+  releaseInfo: string;
+  imdbRating: string;
+}
+
 export interface UserConfig {
   lang: Language;
   sagas: string[];
@@ -44,7 +56,7 @@ export interface UserConfig {
 /* --- Stremio Addon Protocol v1 Types --- */
 
 export interface StremioCatalogDescriptor {
-  type: 'series';
+  type: 'series' | 'movie';
   id: string;
   name: string;
   extra?: Array<{
@@ -61,14 +73,14 @@ export interface StremioManifest {
   description: string;
   logo?: string;
   background?: string;
-  types: Array<'series'>;
+  types: Array<'series' | 'movie'>;
   catalogs: StremioCatalogDescriptor[];
   resources: Array<
     | 'catalog'
     | 'meta'
     | {
         name: 'catalog' | 'meta';
-        types: Array<'series'>;
+        types: Array<'series' | 'movie'>;
         idPrefixes?: string[];
       }
   >;
@@ -85,7 +97,7 @@ export interface StremioManifest {
 
 export interface StremioMetaPreview {
   id: string;
-  type: 'series';
+  type: 'series' | 'movie';
   name: string;
   poster: string;
   posterShape?: 'poster' | 'landscape' | 'square';
@@ -108,7 +120,7 @@ export interface StremioVideo {
 }
 
 export interface StremioMetaDetail extends StremioMetaPreview {
-  videos: StremioVideo[];
+  videos?: StremioVideo[];
 }
 
 export interface WorkerEnv {
