@@ -15,10 +15,10 @@
   * **16 The Simpsons Sagas:** Sideshow Bob Vendetta, Mr. Burns Dossier, Phil Hartman Tribute, Krusty Saga, Ned Flanders' Faith, Flashbacks, Future Visions, Mona Simpson, Meta-Fiction, Prestige Parodies, Itchy & Scratchy, Treehouse of Horror (I–XXXVII), Christmas Specials, World Travel, Homer's Jobs, and Lisa's Rebellion.
   * **15 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, Corporate Warfare (Mom vs. Planet Express), and The Four Epics (Season 5 Movies).
   * **1 Official Crossover:** *Simpsorama* (The Simpsons S26E06).
-* **Individual Posters:** Each collection features its own defining, high-resolution artwork.
+* **Individual Posters:** Each collection features its own dedicated high-resolution artwork served directly via `/poster/:sagaId.jpg` with edge-caching and CORS.
 * **Native Stream Delegation:** Video IDs resolve to canonical IMDb identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`), allowing installed community scrapers (Torrentio, Debridio, etc.) to resolve playback streams automatically.
 * **Bilingual Support (EN / ES):** Full English and Spanish localization for saga titles, episode names, and overviews.
-* **Interactive Web Configurator (`/configure`):** Clean TailwindCSS dark interface where users can select their preferred sagas and language in one click.
+* **Interactive Web Configurator (`/configure`):** Clean, zero-dependency responsive dark interface where users can select their preferred sagas and language in one click.
 * **Serverless & Ultra-Fast:** Built with native Web Standards (`Request`, `Response`, `URL`) running edge-cached on Cloudflare Workers with zero heavy dependencies.
 
 ---

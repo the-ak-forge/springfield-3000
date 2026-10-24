@@ -174,7 +174,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.stremioAddonsConfig.signature).toBeTruthy();
   });
 
-  it('should return catalog metas for springfield3000-all', async () => {
+  it('should return catalog metas for springfield3000-all with dedicated poster endpoints', async () => {
     const req = new Request(
       'https://springfield-3000.workers.dev/catalog/series/springfield3000-all.json'
     );
@@ -183,6 +183,32 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
 
     const json = (await res.json()) as any;
     expect(json.metas.length).toBe(32);
+    expect(json.metas[0].poster).toContain('/poster/simpsons-bob-saga.jpg');
+    expect(json.metas[0].background).toContain('/poster/simpsons-bob-saga.jpg');
+    expect(json.metas[1].poster).toContain('/poster/simpsons-burns-files.jpg');
+  });
+
+  it('should serve direct poster endpoint with CORS and return 404 for unknown IDs', async () => {
+    const validReq = new Request(
+      'https://springfield-3000.workers.dev/poster/simpsons-bob-saga.jpg'
+    );
+    const validRes = await worker.fetch(validReq, {});
+    // Should return 200 (if network reachable) or 302 fallback in offline sandbox
+    expect([200, 302]).toContain(validRes.status);
+    expect(validRes.headers.get('Access-Control-Allow-Origin')).toBe('*');
+
+    const invalidReq = new Request(
+      'https://springfield-3000.workers.dev/poster/non-existent-saga.jpg'
+    );
+    const invalidRes = await worker.fetch(invalidReq, {});
+    expect(invalidRes.status).toBe(404);
+  });
+
+  it('should include version cache-busting query parameter in /configure', async () => {
+    const req = new Request('https://springfield-3000.workers.dev/configure');
+    const res = await worker.fetch(req, {});
+    const html = await res.text();
+    expect(html).toContain('manifest.json?v=' + ADDON_VERSION);
   });
 
   it('should support catalog extras with dots (e.g. search query or skip)', async () => {

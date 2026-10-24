@@ -244,7 +244,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
         copiedBtn: '✅ Copied!',
         installBtn: '🚀 Install Addon',
         readyTitle: 'Ready to watch',
-        readyDesc: 'Click Install to open in Stremio and start playing.',
+        readyDesc: 'Click Install to open in Stremio. (If already installed, uninstall it first in My Addons to force poster refresh).',
         selectedCount: (n, total) => n + ' of ' + total + ' selected',
         episodesBadge: (n) => n + ' ep',
         groups: {
@@ -273,7 +273,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
         copiedBtn: '✅ ¡Copiado!',
         installBtn: '🚀 Instalar Addon',
         readyTitle: 'Listo para ver',
-        readyDesc: 'Haz clic en Instalar para abrir en Stremio y disfrutar.',
+        readyDesc: 'Haz clic en Instalar para abrir en Stremio. (Si ya lo tenías instalado, desinstálalo primero en Mis Addons para refrescar las carátulas).',
         selectedCount: (n, total) => n + ' de ' + total + ' activas',
         episodesBadge: (n) => n + ' ep',
         groups: {
@@ -323,8 +323,8 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
       const encoded = encodeConfigBase64Url(payload);
       const host = window.location.host;
       const protocol = window.location.protocol;
-      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json';
-      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json';
+      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.7';
+      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.7';
 
       const installBtn = document.getElementById('btn-install');
       installBtn.href = stremioManifest;
@@ -385,7 +385,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
 
           label.innerHTML =
             '<input type="checkbox" data-saga-id="' + esc(saga.id) + '" ' + (isChecked ? 'checked' : '') + ' class="saga-checkbox" />' +
-            '<img src="' + esc(saga.poster) + '" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
+            '<img src="/poster/' + esc(saga.id) + '.jpg" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
             '<div class="saga-body">' +
               '<div class="saga-header">' +
                 '<span class="saga-name">' + esc(title) + '</span>' +

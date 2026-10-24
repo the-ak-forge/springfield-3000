@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.6';
+export const ADDON_VERSION = '1.0.7';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -129,14 +129,21 @@ export function buildManifest(config: UserConfig): StremioManifest {
   };
 }
 
-export function toMetaPreview(saga: SagaDefinition, lang: Language): StremioMetaPreview {
+export function toMetaPreview(
+  saga: SagaDefinition,
+  lang: Language,
+  baseUrl?: string
+): StremioMetaPreview {
+  const origin = baseUrl ? baseUrl.replace(/\/+$/, '') : 'https://springfield-3000.ak-forge.workers.dev';
+  const posterUrl = `${origin}/poster/${saga.id}.jpg`;
+
   return {
     id: saga.id,
     type: 'series',
     name: saga.name[lang],
-    poster: saga.poster,
+    poster: posterUrl,
     posterShape: 'poster',
-    background: saga.background,
+    background: posterUrl,
     description: saga.description[lang],
     releaseInfo: saga.releaseInfo,
     imdbRating: saga.imdbRating,
@@ -144,7 +151,11 @@ export function toMetaPreview(saga: SagaDefinition, lang: Language): StremioMeta
   };
 }
 
-export function toMetaDetail(saga: SagaDefinition, lang: Language): StremioMetaDetail {
+export function toMetaDetail(
+  saga: SagaDefinition,
+  lang: Language,
+  baseUrl?: string
+): StremioMetaDetail {
   const prefixTag = lang === 'en' ? 'S' : 'T';
 
   const videos: StremioVideo[] = saga.episodes.map((ep, index) => {
@@ -171,7 +182,7 @@ export function toMetaDetail(saga: SagaDefinition, lang: Language): StremioMetaD
   });
 
   return {
-    ...toMetaPreview(saga, lang),
+    ...toMetaPreview(saga, lang, baseUrl),
     videos,
   };
 }
@@ -305,7 +316,7 @@ export default {
           }
 
           const metas: StremioMetaPreview[] = activeSagas.map((saga) =>
-            toMetaPreview(saga, userConfig.lang)
+            toMetaPreview(saga, userConfig.lang, url.origin)
           );
 
           response = jsonResponse({ metas }, CACHE_CONTROL_META);
@@ -325,11 +336,54 @@ export default {
         if (!saga) {
           response = jsonResponse({ meta: null, error: 'Saga not found' }, 'no-store', 404);
         } else {
-          const meta = toMetaDetail(saga, userConfig.lang);
+          const meta = toMetaDetail(saga, userConfig.lang, url.origin);
           response = jsonResponse({ meta }, CACHE_CONTROL_META);
         }
       }
-      // 4.5 Fallback 404
+      // 4.5 Dedicated Direct Poster Image Route (Bypasses 301 redirects & Stremio client quirks)
+      else if ((m = path.match(/^\/poster\/([^/.]+)\.jpg$/))) {
+        const sagaId = m[1];
+        const saga = SAGAS_BY_ID.get(sagaId);
+        if (!saga) {
+          response = new Response('Poster Not Found', {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CORS_HEADERS, ...SECURITY_HEADERS },
+          });
+        } else {
+          try {
+            const upstream = await fetch(saga.poster, {
+              headers: { Accept: 'image/webp,image/jpeg,image/*,*/*' },
+            });
+            if (!upstream.ok) {
+              response = new Response('Upstream Image Error', {
+                status: upstream.status,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CORS_HEADERS, ...SECURITY_HEADERS },
+              });
+            } else {
+              const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+              response = new Response(upstream.body, {
+                status: 200,
+                headers: {
+                  'Content-Type': contentType,
+                  'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+                  ...CORS_HEADERS,
+                  ...SECURITY_HEADERS,
+                },
+              });
+            }
+          } catch {
+            response = new Response(null, {
+              status: 302,
+              headers: {
+                Location: saga.poster,
+                ...CORS_HEADERS,
+                ...SECURITY_HEADERS,
+              },
+            });
+          }
+        }
+      }
+      // 4.6 Fallback 404
       else {
         response = jsonResponse(
           {
