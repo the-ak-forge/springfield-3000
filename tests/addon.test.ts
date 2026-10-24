@@ -100,6 +100,19 @@ describe('Configuration & Parser Resilience', () => {
     expect(fromDefault.sagas.length).toBe(32);
   });
 
+  it('should cleanly parse config containing version field v for cache-busting', () => {
+    const rawObj = {
+      lang: 'es',
+      sagas: ['simpsons-bob-saga'],
+      v: ADDON_VERSION,
+    };
+    const b64 = toBase64Url(rawObj);
+    const decoded = decodeConfig(b64);
+
+    expect(decoded.lang).toBe('es');
+    expect(decoded.sagas).toEqual(['simpsons-bob-saga']);
+  });
+
   it('should deduplicate saga IDs in user configuration', () => {
     const rawObj = {
       lang: 'en',
@@ -320,7 +333,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
       new Request('https://springfield-3000.workers.dev/manifest.json'),
       {}
     );
-    expect(manifestRes.headers.get('Cache-Control')).toContain('max-age=3600');
+    expect(manifestRes.headers.get('Cache-Control')).toContain('no-store');
 
     const metaRes = await worker.fetch(
       new Request('https://springfield-3000.workers.dev/meta/series/simpsons-bob-saga.json'),

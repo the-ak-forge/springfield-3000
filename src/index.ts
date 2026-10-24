@@ -11,7 +11,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.12';
+export const ADDON_VERSION = '1.0.13';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +33,7 @@ const HTML_SECURITY_HEADERS: Record<string, string> = {
 
 const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
-const CACHE_CONTROL_MANIFEST = 'public, max-age=3600, stale-while-revalidate=1800';
+const CACHE_CONTROL_MANIFEST = 'no-cache, no-store, must-revalidate';
 
 export function safeDecodePath(pathname: string): string {
   try {

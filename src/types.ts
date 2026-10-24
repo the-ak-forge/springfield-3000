@@ -36,6 +36,7 @@ export interface SagaDefinition {
 export interface UserConfig {
   lang: Language;
   sagas: string[];
+  v?: string;
 }
 
 /* --- Stremio Addon Protocol v1 Types --- */

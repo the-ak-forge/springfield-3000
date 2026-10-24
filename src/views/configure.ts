@@ -10,7 +10,7 @@ export function escHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.12'): string {
+export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.13'): string {
   const defaultConfig: UserConfig = initialConfig ?? {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),
@@ -333,7 +333,8 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.1
       } else {
         const payload = {
           lang: state.lang,
-          sagas: orderedIds
+          sagas: orderedIds,
+          v: CURRENT_VERSION
         };
         const encoded = encodeConfigBase64Url(payload);
         const host = window.location.host;
