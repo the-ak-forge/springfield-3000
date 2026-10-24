@@ -278,16 +278,15 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
       put: async () => {},
     };
 
-    // Inject global caches mock
+    // Inject global caches mock with safe try/finally cleanup
     (globalThis as any).caches = { default: mockCache };
-
-    const req = new Request('https://springfield-3000.workers.dev/manifest.json');
-    const res = await worker.fetch(req, {});
-    const text = await res.text();
-
-    expect(text).toBe(cachedBody);
-
-    // Clean up mock
-    delete (globalThis as any).caches;
+    try {
+      const req = new Request('https://springfield-3000.workers.dev/manifest.json');
+      const res = await worker.fetch(req, {});
+      const text = await res.text();
+      expect(text).toBe(cachedBody);
+    } finally {
+      delete (globalThis as any).caches;
+    }
   });
 });
