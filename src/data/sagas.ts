@@ -68,7 +68,7 @@ export const SAGAS: SagaDefinition[] = [
       { season: 7, episode: 1, title: { en: 'Who Shot Mr. Burns? (Part Two)', es: '¿Quién mató al Sr. Burns? (Parte 2)' } },
       { season: 7, episode: 17, title: { en: 'Homer the Smithers', es: 'Homero Smithers' } },
       { season: 8, episode: 21, title: { en: 'The Old Man and the Lisa', es: 'El viejo y la Lisa' } },
-      { season: 10, episode: 20, title: { en: 'Monty Can’t Buy Me Love', es: 'Monty no puede comprar mi amor' } },
+      { season: 10, episode: 21, title: { en: 'Monty Can’t Buy Me Love', es: 'Monty no puede comprar mi amor' } },
       { season: 13, episode: 16, title: { en: 'Weekend at Burnsie’s', es: 'Fin de semana con Burns' } },
       { season: 27, episode: 16, title: { en: 'The Burns Cage', es: 'La jaula de Burns' } },
     ],
@@ -95,7 +95,7 @@ export const SAGAS: SagaDefinition[] = [
       { season: 4, episode: 12, title: { en: 'Marge vs. the Monorail', es: 'Marge contra el monorriel' } },
       { season: 4, episode: 14, title: { en: 'Brother from the Same Planet', es: 'Hermano del mismo planeta' } },
       { season: 4, episode: 21, title: { en: 'Marge in Chains', es: 'Marge en cadenas' } },
-      { season: 5, episode: 18, title: { en: 'Sweet Seymour Skinner’s Baadasssss Song', es: 'La canción de Skinner' } },
+      { season: 5, episode: 19, title: { en: 'Sweet Seymour Skinner’s Baadasssss Song', es: 'La canción de Skinner' } },
       { season: 7, episode: 19, title: { en: 'A Fish Called Selma', es: 'Un pez llamado Selma' } },
       { season: 8, episode: 17, title: { en: 'My Sister, My Sitter', es: 'Mi hermana, mi niñera' } },
       { season: 9, episode: 14, title: { en: 'Das Bus', es: 'El autobús' } },
@@ -495,7 +495,7 @@ export const SAGAS: SagaDefinition[] = [
     imdbRating: '9.2',
     episodes: [
       { season: 1, episode: 1, title: { en: 'Space Pilot 3000', es: 'Piloto espacial 3000' } },
-      { season: 2, episode: 10, title: { en: 'Why Must I Be a Crustacean in Love?', es: '¿Por qué debo ser un crustáceo enamorado?' } },
+      { season: 2, episode: 7, title: { en: 'Why Must I Be a Crustacean in Love?', es: '¿Por qué debo ser un crustáceo enamorado?' } },
       { season: 3, episode: 1, title: { en: 'Amazon Women in the Mood', es: 'Amazonas con ganas' } },
       { season: 3, episode: 14, title: { en: 'Time Keeps On Slippin’', es: 'El tiempo sigue resbalando' } },
       { season: 4, episode: 12, title: { en: 'The Sting', es: 'La picadura' } },
@@ -906,6 +906,6 @@ export const SAGAS: SagaDefinition[] = [
   },
 ];
 
-export const SAGAS_BY_ID: Record<string, SagaDefinition> = Object.fromEntries(
+export const SAGAS_BY_ID = new Map<string, SagaDefinition>(
   SAGAS.map((saga) => [saga.id, saga])
 );
