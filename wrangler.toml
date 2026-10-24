@@ -1,0 +1,7 @@
+name = "springfield-3000"
+main = "src/index.ts"
+compatibility_date = "2024-10-22"
+workers_dev = true
+
+[observability]
+enabled = true
