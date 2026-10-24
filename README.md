@@ -34,7 +34,7 @@
 ## 🛠️ Local Development
 
 ### Prerequisites
-* [Node.js](https://nodejs.org) (v18+)
+* [Node.js](https://nodejs.org) (v20+)
 * [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
 
 ### Setup

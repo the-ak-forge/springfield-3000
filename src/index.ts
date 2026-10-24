@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.3';
+export const ADDON_VERSION = '1.0.4';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +30,7 @@ const HTML_SECURITY_HEADERS: Record<string, string> = {
     "default-src 'self'; img-src * data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none';",
 };
 
-const CACHE_CONTROL_META = 'public, max-age=86400, stale-while-revalidate=43200';
+const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
 const CACHE_CONTROL_MANIFEST = 'public, max-age=3600, stale-while-revalidate=1800';
 
 export function safeDecodePath(pathname: string): string {
@@ -254,37 +254,33 @@ export default {
       }
 
       let response: Response;
+      let m: RegExpMatchArray | null;
 
-      // 4. Flat Route Dispatcher
+      // 4. Flat Route Dispatcher (Single-pass regex matching)
       // 4.1 Configure Page
       if (path === '/' || path === '/configure') {
         response = htmlResponse(renderConfigurePage());
-      } else if (/^\/([^/]+)\/configure$/.test(path)) {
-        const match = path.match(/^\/([^/]+)\/configure$/)!;
-        const userConfig = decodeConfig(match[1]);
+      } else if ((m = path.match(/^\/([^/]+)\/configure$/))) {
+        const userConfig = decodeConfig(m[1]);
         response = htmlResponse(renderConfigurePage(userConfig));
       }
       // 4.2 Manifest Routes
       else if (path === '/manifest.json') {
         const defaultConfig = decodeConfig();
         response = jsonResponse(buildManifest(defaultConfig), CACHE_CONTROL_MANIFEST);
-      } else if (/^\/([^/]+)\/manifest\.json$/.test(path)) {
-        const match = path.match(/^\/([^/]+)\/manifest\.json$/)!;
-        const userConfig = decodeConfig(match[1]);
+      } else if ((m = path.match(/^\/([^/]+)\/manifest\.json$/))) {
+        const userConfig = decodeConfig(m[1]);
         response = jsonResponse(buildManifest(userConfig), CACHE_CONTROL_MANIFEST);
       }
       // 4.3 Catalog Routes (supports optional extras with dots e.g. search=foo)
       else if (
-        /^\/([^/]+)\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/.test(path) ||
-        /^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/.test(path)
-      ) {
-        const match =
+        (m =
           path.match(/^\/([^/]+)\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/) ??
-          path.match(/^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/)!;
-
-        const hasConfigSegment = match.length === 4;
-        const userConfig = hasConfigSegment ? decodeConfig(match[1]) : decodeConfig();
-        const catalogId = hasConfigSegment ? match[2] : match[1];
+          path.match(/^\/catalog\/series\/([^/]+?)(?:\/([^/]+))?\.json$/))
+      ) {
+        const hasConfigSegment = m.length === 4;
+        const userConfig = hasConfigSegment ? decodeConfig(m[1]) : decodeConfig();
+        const catalogId = hasConfigSegment ? m[2] : m[1];
 
         const allowedCatalogs = new Set([
           'springfield3000-all',
@@ -317,16 +313,13 @@ export default {
       }
       // 4.4 Meta Detail Routes
       else if (
-        /^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/.test(path) ||
-        /^\/meta\/series\/([^/.]+)\.json$/.test(path)
-      ) {
-        const match =
+        (m =
           path.match(/^\/([^/]+)\/meta\/series\/([^/.]+)\.json$/) ??
-          path.match(/^\/meta\/series\/([^/.]+)\.json$/)!;
-
-        const hasConfigSegment = match.length === 3;
-        const userConfig = hasConfigSegment ? decodeConfig(match[1]) : decodeConfig();
-        const sagaId = hasConfigSegment ? match[2] : match[1];
+          path.match(/^\/meta\/series\/([^/.]+)\.json$/))
+      ) {
+        const hasConfigSegment = m.length === 3;
+        const userConfig = hasConfigSegment ? decodeConfig(m[1]) : decodeConfig();
+        const sagaId = hasConfigSegment ? m[2] : m[1];
 
         const saga = SAGAS_BY_ID.get(sagaId);
         if (!saga) {
