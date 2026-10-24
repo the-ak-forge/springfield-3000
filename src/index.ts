@@ -90,6 +90,11 @@ function buildManifest(config: UserConfig): StremioManifest {
       configurable: true,
       configurationRequired: false,
     },
+    stremioAddonsConfig: {
+      issuer: 'https://stremio-addons.net',
+      signature:
+        'eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0..9RD_vDdhdzNkUVTWv-mHmw.EjXq7IDEle-w9UavH2Bnh3NzF_SX7c1wMHUpIQArJkJ03azC2ezpAS2YWUejlbWCs4dLKfsOmLp0z5q5seW34MWZxGdcfFe3E0DO4dWyzSgzI_gdQC7WBmztzoApDJq7.wm6OuwAeCIwoXKvBfKK2-Q',
+    },
   };
 }
 

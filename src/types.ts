@@ -74,6 +74,10 @@ export interface StremioManifest {
     configurable?: boolean;
     configurationRequired?: boolean;
   };
+  stremioAddonsConfig?: {
+    issuer: string;
+    signature: string;
+  };
 }
 
 export interface StremioMetaPreview {
