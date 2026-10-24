@@ -57,49 +57,18 @@ export function decodeConfig(rawSegment?: string): UserConfig {
 
 function buildManifest(config: UserConfig): StremioManifest {
   const isEn = config.lang === 'en';
-  const activeSagas = config.sagas
-    .map((id) => SAGAS_BY_ID[id])
-    .filter((s): s is SagaDefinition => Boolean(s));
-
-  const hasSimpsons = activeSagas.some((s) => s.universe === 'simpsons');
-  const hasFuturama = activeSagas.some((s) => s.universe === 'futurama');
-  const hasCrossover = activeSagas.some((s) => s.universe === 'crossover');
 
   const catalogs: StremioManifest['catalogs'] = [
     {
       type: 'series',
       id: 'springfield3000-all',
-      name: isEn ? 'Springfield 3000: All Curated Sagas' : 'Springfield 3000: Todas las Sagas',
+      name: 'Springfield 3000',
     },
   ];
 
-  if (hasSimpsons) {
-    catalogs.push({
-      type: 'series',
-      id: 'springfield3000-simpsons',
-      name: isEn ? 'The Simpsons — Sagas & Anthologies' : 'Los Simpson — Sagas y Antologías',
-    });
-  }
-
-  if (hasFuturama) {
-    catalogs.push({
-      type: 'series',
-      id: 'springfield3000-futurama',
-      name: isEn ? 'Futurama — Sci-Fi Arcs & Lore' : 'Futurama — Arcos y Lore Sci-Fi',
-    });
-  }
-
-  if (hasCrossover) {
-    catalogs.push({
-      type: 'series',
-      id: 'springfield3000-crossover',
-      name: isEn ? 'Springfield × 3000 Crossover' : 'Crossover Springfield × 3000',
-    });
-  }
-
   return {
     id: 'org.springfield3000.curated.addon',
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'Springfield 3000',
     description: isEn
       ? 'Curated thematic collections, chronological character arcs, and complete anthologies for The Simpsons (tt0096697) & Futurama (tt0149460). Updated through Oct 2026.'
