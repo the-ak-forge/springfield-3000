@@ -5,21 +5,27 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6.svg?logo=typescript)](https://www.typescriptlang.org)
 [![Bilingual](https://img.shields.io/badge/Language-EN%20%7C%20ES-success.svg)](#features)
 
-**Springfield 3000** is a serverless Stremio curation addon deployed on Cloudflare Workers. It transforms the vast catalogs of ***The Simpsons*** (`tt0096697`) and ***Futurama*** (`tt0149460`) into 32 structured thematic collections, chronological character arcs, and complete anthologies (updated through October 2026).
+**Springfield 3000** is a serverless Stremio curation addon deployed on Cloudflare Workers. It transforms the vast catalogs of ***The Simpsons*** (`tt0096697`) and ***Futurama*** (`tt0149460`) into 31 structured thematic series collections and 5 complete feature films, chronological character arcs, and complete anthologies (updated through October 2026).
 
 ---
 
 ## 🌟 Features
 
-* **32 Curated Sagas:**
+* **31 Curated Sagas (Series Catalog):**
   * **16 The Simpsons Sagas:** Sideshow Bob Vendetta, Mr. Burns Dossier, Phil Hartman Tribute, Krusty Saga, Ned Flanders' Faith, Flashbacks, Future Visions, Mona Simpson, Meta-Fiction, Prestige Parodies, Itchy & Scratchy, Treehouse of Horror (I–XXXVII), Christmas Specials, World Travel, Homer's Jobs, and Lisa's Rebellion.
-  * **15 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, Corporate Warfare (Mom vs. Planet Express), and The Four Epics (The Feature Movies).
+  * **14 Futurama Sagas:** Fry & Leela Romance, The Nibblonians, Leela's Mutant Origin, Time Travel & Paradoxes, Prof. Farnsworth's Hubris, Tearjerkers, What-If Vault, Robot Santa Xmas Terror, Hulu Renaissance (2023–2026), Bender's Destiny, Zapp Brannigan DOOP Dossier, Dr. Zoidberg, Robot Underworld, and Corporate Warfare (Mom vs. Planet Express).
   * **1 Official Crossover:** *Simpsorama* (The Simpsons S26E06).
-* **Individual Vertical Posters:** Each collection features bespoke 2:3 vertical typography posters (`600x900`), self-hosted directly via Cloudflare Workers Static Assets at `/poster/:lang/:sagaId.jpg` with edge-caching and CORS.
-* **Canonical Cinemeta & IMDb Stream Delegation:** Video IDs resolve to canonical IMDb/Cinemeta identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`), ensuring scrapers (Torrentio, Debridio, etc.) automatically stream the exact correct episode.
-* **Bilingual Support (EN / ES):** Full English and Spanish localization for saga titles, episode names, and overviews.
+* **5 Feature Films (Movies Catalog):**
+  * *Futurama: Bender's Big Score* (2007 — 89 min, `tt0471711`)
+  * *Futurama: The Beast with a Billion Backs* (2008 — 89 min, `tt1054485`)
+  * *Futurama: Bender's Game* (2008 — 87 min, `tt1054486`)
+  * *Futurama: Into the Wild Green Yonder* (2009 — 89 min, `tt1054487`)
+  * *The Simpsons Movie* (2007 — 87 min, `tt0462538`)
+* **Individual Vertical Posters:** Each saga features bespoke 2:3 vertical typography posters (`600x900`), self-hosted directly via Cloudflare Workers Static Assets at `/poster/:lang/:sagaId.jpg` with CORS.
+* **Canonical Cinemeta & IMDb Stream Delegation:** Series video IDs resolve to canonical identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`) and movies resolve to feature-film IDs (`tt0471711`, `tt0462538`, etc.), ensuring scrapers (Torrentio, ElfCache, Debridio, etc.) automatically stream the exact correct episode or uncompressed full-length film.
+* **Bilingual Support (EN / ES):** Full English and Spanish localization for saga titles, episode names, movies, and overviews.
 * **Interactive Web Configurator (`/configure`):** Clean, zero-dependency responsive dark interface where users can select their preferred sagas and language in one click.
-* **Serverless & Ultra-Fast:** Built with native Web Standards (`Request`, `Response`, `URL`) running edge-cached on Cloudflare Workers with zero heavy dependencies.
+* **Serverless & Ultra-Fast:** Built with native Web Standards (`Request`, `Response`, `URL`) running on Cloudflare Workers with zero heavy dependencies.
 
 ---
 
@@ -74,18 +80,19 @@ npm run deploy
 ```text
 springfield3000/
 ├── assets/
-│   └── posters/            # 64 curated 2:3 vertical posters (32 EN + 32 ES)
+│   └── posters/            # Curated 2:3 vertical posters (EN + ES)
 ├── scripts/
 │   └── generate-posters.js # Automated typography poster composition engine
 ├── src/
 │   ├── data/
-│   │   └── sagas.ts        # In-memory dataset of 32 sagas with canonical Cinemeta metadata
+│   │   ├── movies.ts       # Dataset of 5 complete feature films
+│   │   └── sagas.ts        # In-memory dataset of 31 sagas with canonical Cinemeta metadata
 │   ├── views/
 │   │   └── configure.ts    # Responsive dark configurator UI
 │   ├── types.ts            # Stremio Addon Protocol v1 TypeScript definitions
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
 ├── tests/
-│   └── addon.test.ts       # 26 automated unit and integration tests
+│   └── addon.test.ts       # 29 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
 ├── wrangler.toml
