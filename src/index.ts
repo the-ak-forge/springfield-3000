@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.8';
+export const ADDON_VERSION = '1.0.9';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -30,6 +30,7 @@ const HTML_SECURITY_HEADERS: Record<string, string> = {
     "default-src 'self'; img-src * data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none';",
 };
 
+const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
 const CACHE_CONTROL_MANIFEST = 'public, max-age=3600, stale-while-revalidate=1800';
 
@@ -92,7 +93,7 @@ export function buildManifest(config: UserConfig): StremioManifest {
   const catalogs: StremioManifest['catalogs'] = [
     {
       type: 'series',
-      id: 'springfield3000-all',
+      id: 'springfield3000-sagas',
       name: 'Springfield 3000',
     },
   ];
@@ -294,6 +295,7 @@ export default {
         const catalogId = hasConfigSegment ? m[2] : m[1];
 
         const allowedCatalogs = new Set([
+          'springfield3000-sagas',
           'springfield3000-all',
           'springfield3000-simpsons',
           'springfield3000-futurama',
@@ -319,7 +321,7 @@ export default {
             toMetaPreview(saga, userConfig.lang, url.origin)
           );
 
-          response = jsonResponse({ metas }, CACHE_CONTROL_META);
+          response = jsonResponse({ metas }, CACHE_CONTROL_CATALOG);
         }
       }
       // 4.4 Meta Detail Routes

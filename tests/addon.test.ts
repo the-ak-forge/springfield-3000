@@ -169,14 +169,14 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.id).toBe('org.springfield3000.curated.addon');
     expect(json.version).toBe(ADDON_VERSION);
     expect(json.catalogs.length).toBe(1);
-    expect(json.catalogs[0].id).toBe('springfield3000-all');
+    expect(json.catalogs[0].id).toBe('springfield3000-sagas');
     expect(json.stremioAddonsConfig.issuer).toBe('https://stremio-addons.net');
     expect(json.stremioAddonsConfig.signature).toBeTruthy();
   });
 
-  it('should return catalog metas for springfield3000-all with dedicated poster endpoints', async () => {
+  it('should return catalog metas for springfield3000-sagas and springfield3000-all with dedicated poster endpoints', async () => {
     const req = new Request(
-      'https://springfield-3000.workers.dev/catalog/series/springfield3000-all.json'
+      'https://springfield-3000.workers.dev/catalog/series/springfield3000-sagas.json'
     );
     const res = await worker.fetch(req, {});
     expect(res.status).toBe(200);
@@ -186,6 +186,13 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.metas[0].poster).toContain('/poster/en/simpsons-bob-saga.jpg');
     expect(json.metas[0].background).toContain('/poster/en/simpsons-bob-saga.jpg');
     expect(json.metas[1].poster).toContain('/poster/en/simpsons-burns-files.jpg');
+
+    // Backward compatibility for legacy springfield3000-all catalog ID
+    const legacyReq = new Request(
+      'https://springfield-3000.workers.dev/catalog/series/springfield3000-all.json'
+    );
+    const legacyRes = await worker.fetch(legacyReq, {});
+    expect(legacyRes.status).toBe(200);
   });
 
   it('should serve direct localized poster endpoint with CORS and return 404 for unknown IDs', async () => {

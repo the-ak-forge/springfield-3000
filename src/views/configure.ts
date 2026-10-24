@@ -323,8 +323,8 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
       const encoded = encodeConfigBase64Url(payload);
       const host = window.location.host;
       const protocol = window.location.protocol;
-      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.8';
-      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.8';
+      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.9';
+      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.9';
 
       const installBtn = document.getElementById('btn-install');
       installBtn.href = stremioManifest;
