@@ -10,7 +10,7 @@ export function escHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderConfigurePage(initialConfig?: UserConfig): string {
+export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.10'): string {
   const defaultConfig: UserConfig = initialConfig ?? {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),
@@ -184,7 +184,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
 <body>
   <div class="container">
     <header class="header text-center">
-      <h1 class="title">SPRINGFIELD 3000</h1>
+      <h1 class="title">SPRINGFIELD 3000 <span style="font-size: 0.875rem; vertical-align: middle; margin-left: 0.5rem; background: #1e293b; color: #38bdf8; border: 1px solid #0284c7; padding: 0.2rem 0.6rem; border-radius: 9999px; letter-spacing: normal; -webkit-text-fill-color: initial;">v${escHtml(version)}</span></h1>
       <p id="ui-subtitle" class="subtitle"></p>
     </header>
 
@@ -220,6 +220,7 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
   <script>
     const SAGAS_DATA = ${JSON.stringify(clientSagasPayload)};
     const INITIAL_CONFIG = ${JSON.stringify(defaultConfig)};
+    const CURRENT_VERSION = ${JSON.stringify(version)};
     const COUNTS = {
       simpsons: ${simpsonsCount},
       futurama: ${futuramaCount},
@@ -323,8 +324,8 @@ export function renderConfigurePage(initialConfig?: UserConfig): string {
       const encoded = encodeConfigBase64Url(payload);
       const host = window.location.host;
       const protocol = window.location.protocol;
-      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=1.0.9';
-      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=1.0.9';
+      manifestUrl = protocol + '//' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION + '&t=' + Date.now();
+      const stremioManifest = 'stremio://' + host + '/' + encoded + '/manifest.json?v=' + CURRENT_VERSION + '&t=' + Date.now();
 
       const installBtn = document.getElementById('btn-install');
       installBtn.href = stremioManifest;

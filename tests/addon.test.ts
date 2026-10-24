@@ -222,7 +222,8 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     const req = new Request('https://springfield-3000.workers.dev/configure');
     const res = await worker.fetch(req, {});
     const html = await res.text();
-    expect(html).toContain('manifest.json?v=' + ADDON_VERSION);
+    expect(html).toContain('CURRENT_VERSION = "' + ADDON_VERSION + '"');
+    expect(html).toContain('v' + ADDON_VERSION);
   });
 
   it('should support catalog extras with dots (e.g. search query or skip)', async () => {

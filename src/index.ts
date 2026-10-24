@@ -10,7 +10,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.9';
+export const ADDON_VERSION = '1.0.10';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -271,10 +271,10 @@ export default {
       // 4. Flat Route Dispatcher (Single-pass regex matching)
       // 4.1 Configure Page
       if (path === '/' || path === '/configure') {
-        response = htmlResponse(renderConfigurePage());
+        response = htmlResponse(renderConfigurePage(undefined, ADDON_VERSION));
       } else if ((m = path.match(/^\/([^/]+)\/configure$/))) {
         const userConfig = decodeConfig(m[1]);
-        response = htmlResponse(renderConfigurePage(userConfig));
+        response = htmlResponse(renderConfigurePage(userConfig, ADDON_VERSION));
       }
       // 4.2 Manifest Routes
       else if (path === '/manifest.json') {
