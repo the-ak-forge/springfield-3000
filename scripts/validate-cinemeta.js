@@ -3,6 +3,19 @@ const { MOVIES } = require('../dist/data/movies.js');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io/meta';
 
+// Regex for recognized standalone Roman numerals (longest to shortest)
+const ROMAN_REGEX = /\b(xxxvii|xxxvi|xxxv|xxxiv|xxxiii|xxxii|xxxi|xxx|xxix|xxviii|xxvii|xxvi|xxv|xxiv|xxiii|xxii|xxi|xx|xix|xviii|xvii|xvi|xv|xiv|xiii|xii|xi|x|ix|viii|vii|vi|v|iv|iii|ii|i)\b/g;
+
+function extractRomans(str) {
+  const matches = str.match(ROMAN_REGEX);
+  return matches ? matches : [];
+}
+
+function extractNumbers(str) {
+  const matches = str.match(/\b\d+\b/g);
+  return matches ? matches : [];
+}
+
 function norm(str) {
   if (!str) return '';
   return String(str)
@@ -26,7 +39,41 @@ function titlesMatch(expected, actual) {
   const nAct = norm(actual);
   if (!nExp || !nAct) return false;
   if (nExp === nAct) return true;
-  if (nExp.includes(nAct) || nAct.includes(nExp)) return true;
+
+  // 1. Strict Roman numeral check:
+  // If either title has Roman numerals, they must match exactly.
+  // Exception: "Treehouse of Horror I" vs "Treehouse of Horror" (Cinemeta omits 'I' on the original pilot special)
+  const expRomans = extractRomans(nExp);
+  const actRomans = extractRomans(nAct);
+
+  const isThohPilot =
+    (nExp.startsWith('treehouse of horror') && nAct.startsWith('treehouse of horror')) &&
+    ((expRomans.length === 1 && expRomans[0] === 'i' && actRomans.length === 0) ||
+     (actRomans.length === 1 && actRomans[0] === 'i' && expRomans.length === 0));
+
+  if (!isThohPilot) {
+    if (expRomans.length > 0 || actRomans.length > 0) {
+      if (expRomans.join(' ') !== actRomans.join(' ')) {
+        return false;
+      }
+    }
+  }
+
+  // 2. Strict Arabic numbers check:
+  // If both titles have numbers (e.g. "Part 1" vs "Part 2" or "2.0"), they must match exactly.
+  const expNums = extractNumbers(nExp);
+  const actNums = extractNumbers(nAct);
+  if (expNums.length > 0 && actNums.length > 0) {
+    if (expNums.join(' ') !== actNums.join(' ')) {
+      return false;
+    }
+  }
+
+  // 3. Substring matching allowed only when numbers/romans are not conflicting
+  if (nExp.includes(nAct) || nAct.includes(nExp)) {
+    return true;
+  }
+
   return false;
 }
 
@@ -107,6 +154,9 @@ async function validateCinemeta() {
   let titleMatches = 0;
 
   for (const saga of SAGAS) {
+    let sagaMatches = 0;
+    let sagaErrors = 0;
+
     for (const ep of saga.episodes) {
       totalEpisodesChecked++;
       const showId = ep.imdbId || saga.defaultImdbId;
@@ -116,6 +166,7 @@ async function validateCinemeta() {
       if (!cinemetaEp) {
         console.error(`  ❌ [${saga.id}] Episode missing in Cinemeta: S${ep.season}E${ep.episode} ("${ep.title.en}") -> Key: ${key}`);
         errors++;
+        sagaErrors++;
         continue;
       }
 
@@ -125,9 +176,18 @@ async function validateCinemeta() {
         console.error(`     Expected : "${ep.title.en}"`);
         console.error(`     Cinemeta : "${cTitle}" (Key: ${key})`);
         errors++;
+        sagaErrors++;
       } else {
         titleMatches++;
+        sagaMatches++;
       }
+    }
+
+    if (sagaErrors === 0) {
+      const universeBadge = saga.universe.toUpperCase().padEnd(9);
+      console.log(`  ✅ [${universeBadge}] ${saga.id.padEnd(30)}: ${sagaMatches}/${saga.episodes.length} episodes verified`);
+    } else {
+      console.error(`  ❌ [${saga.universe.toUpperCase()}] ${saga.id}: ${sagaErrors} error(s) found!`);
     }
   }
 
@@ -144,7 +204,7 @@ async function validateCinemeta() {
     console.error(`❌ Cinemeta validation failed with ${errors} error(s).`);
     process.exit(1);
   } else {
-    console.log(`✅ All ${MOVIES.length} movies and ${totalEpisodesChecked} episode references perfectly matched Cinemeta canonical titles and IDs! 🎉`);
+    console.log(`✅ All ${MOVIES.length} movies and ${totalEpisodesChecked} episode references (including all 37 Treehouse of Horror and all Futurama sagas) passed strict canonical title & ID verification! 🎉`);
   }
 }
 

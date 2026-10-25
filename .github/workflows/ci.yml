@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 12 * * 1' # Weekly on Mondays to monitor Cinemeta upstream catalog changes
+  workflow_dispatch:
 
 jobs:
   test:
@@ -30,3 +33,6 @@ jobs:
 
       - name: Run Test Suite
         run: npm test
+
+      - name: Verify Cinemeta Canon
+        run: npm run verify:cinemeta
