@@ -66,6 +66,9 @@ npm run typecheck
 # Run Vitest test suite
 npm test
 
+# Validate all movies and episodes against Cinemeta API
+npm run verify:cinemeta
+
 # Regenerate bespoke 2:3 posters
 npm run posters:build
 

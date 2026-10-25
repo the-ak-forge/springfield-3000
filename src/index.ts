@@ -11,9 +11,10 @@ import {
   UserConfig,
   WorkerEnv,
 } from './types';
+import { ADDON_VERSION } from './version';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.19';
+export { ADDON_VERSION };
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +38,7 @@ const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600'
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
 const CACHE_CONTROL_MANIFEST = 'public, max-age=300, stale-while-revalidate=60';
 
-const MOVIE_IDS = ['tt0471711', 'tt1054485', 'tt1054486', 'tt1054487', 'tt0462538'];
+const MOVIE_IDS = MOVIES.map((m) => m.id);
 const ID_PREFIXES = ['simpsons-', 'futurama-', 'crossover-', ...MOVIE_IDS];
 
 export function safeDecodePath(pathname: string): string {

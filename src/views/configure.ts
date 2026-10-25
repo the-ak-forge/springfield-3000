@@ -1,5 +1,6 @@
 import { SAGAS } from '../data/sagas';
 import { UserConfig } from '../types';
+import { ADDON_VERSION } from '../version';
 
 export function escHtml(str: string): string {
   return str
@@ -10,7 +11,7 @@ export function escHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderConfigurePage(initialConfig?: UserConfig, version = '1.0.19'): string {
+export function renderConfigurePage(initialConfig?: UserConfig, version = ADDON_VERSION): string {
   const defaultConfig: UserConfig = initialConfig ?? {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),

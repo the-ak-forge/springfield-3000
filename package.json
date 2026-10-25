@@ -12,6 +12,7 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "verify:cinemeta": "tsc --module CommonJS --target ES2022 --outDir ./dist src/data/sagas.ts src/data/movies.ts src/types.ts && node scripts/validate-cinemeta.js",
     "posters:build": "tsc --module CommonJS --target ES2022 --outDir ./dist src/data/sagas.ts src/types.ts && node scripts/generate-posters.js"
   },
   "devDependencies": {

@@ -115,6 +115,38 @@ describe('Springfield 3000 Data Integrity', () => {
     expect(crustaceanEp?.season).toBe(2);
     expect(crustaceanEp?.episode).toBe(9);
   });
+
+  it('should ensure any explicit count in saga descriptions matches episodes.length', () => {
+    for (const saga of SAGAS) {
+      // Matches "N hand-picked highlight episodes" or "N hand-picked"
+      const matchEn = saga.description.en.match(/(\d+)\s+(?:hand-picked)/i);
+      if (matchEn) {
+        const count = parseInt(matchEn[1], 10);
+        expect(count, `Mismatch in saga ${saga.id} en description`).toBe(saga.episodes.length);
+      }
+
+      // Matches "N episodios destacados"
+      const matchEs = saga.description.es.match(/(\d+)\s+(?:episodios destacados)/i);
+      if (matchEs) {
+        const count = parseInt(matchEs[1], 10);
+        expect(count, `Mismatch in saga ${saga.id} es description`).toBe(saga.episodes.length);
+      }
+    }
+  });
+
+  it('should verify enriched saga counts for Christmas and other key collections', () => {
+    expect(SAGAS_BY_ID.get('simpsons-christmas')?.episodes.length).toBe(19);
+    expect(SAGAS_BY_ID.get('futurama-farnsworth-hubris')?.episodes.length).toBe(6);
+    expect(SAGAS_BY_ID.get('futurama-hulu-renaissance')?.episodes.length).toBe(6);
+    expect(SAGAS_BY_ID.get('simpsons-lisa-rebellion')?.episodes.length).toBe(7);
+    expect(SAGAS_BY_ID.get('simpsons-homer-jobs')?.episodes.length).toBe(8);
+    expect(SAGAS_BY_ID.get('simpsons-itchy-scratchy')?.episodes.length).toBe(6);
+    expect(SAGAS_BY_ID.get('simpsons-krusty-saga')?.episodes.length).toBe(8);
+    expect(SAGAS_BY_ID.get('simpsons-flanders-job')?.episodes.length).toBe(8);
+    expect(SAGAS_BY_ID.get('futurama-space-romance')?.episodes.length).toBe(11);
+    expect(SAGAS_BY_ID.get('futurama-mutant-saga')?.episodes.length).toBe(5);
+    expect(SAGAS_BY_ID.get('futurama-time-travel')?.episodes.length).toBe(5);
+  });
 });
 
 describe('Configuration & Parser Resilience', () => {
