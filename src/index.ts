@@ -13,7 +13,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.18';
+export const ADDON_VERSION = '1.0.19';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
