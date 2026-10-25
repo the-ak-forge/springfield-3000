@@ -1,6 +1,6 @@
 {
   "name": "springfield-3000",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Serverless Stremio Addon for The Simpsons & Futurama curated sagas, story arcs, and anthologies (Bilingual EN/ES)",
   "private": true,
   "engines": {
@@ -12,8 +12,8 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "verify:cinemeta": "tsc --module CommonJS --target ES2022 --outDir ./dist src/data/sagas.ts src/data/movies.ts src/types.ts && node scripts/validate-cinemeta.js",
-    "posters:build": "tsc --module CommonJS --target ES2022 --outDir ./dist src/data/sagas.ts src/types.ts && node scripts/generate-posters.js"
+    "verify:cinemeta": "tsc -p tsconfig.scripts.json && node scripts/validate-cinemeta.js",
+    "posters:build": "tsc -p tsconfig.scripts.json && node scripts/generate-posters.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261024.1",

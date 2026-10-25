@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { MOVIES, MOVIES_BY_ID } from '../src/data/movies';
 import { SAGAS, SAGAS_BY_ID } from '../src/data/sagas';
@@ -146,6 +148,11 @@ describe('Springfield 3000 Data Integrity', () => {
     expect(SAGAS_BY_ID.get('futurama-space-romance')?.episodes.length).toBe(11);
     expect(SAGAS_BY_ID.get('futurama-mutant-saga')?.episodes.length).toBe(5);
     expect(SAGAS_BY_ID.get('futurama-time-travel')?.episodes.length).toBe(5);
+  });
+
+  it('should have synchronized version between src/version.ts and package.json', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+    expect(pkg.version).toBe(ADDON_VERSION);
   });
 });
 

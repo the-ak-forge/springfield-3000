@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "target": "ES2022",
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "noEmit": false
+  },
+  "include": [
+    "src/data/sagas.ts",
+    "src/data/movies.ts",
+    "src/types.ts",
+    "src/version.ts"
+  ]
+}

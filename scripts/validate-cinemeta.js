@@ -3,6 +3,33 @@ const { MOVIES } = require('../dist/data/movies.js');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io/meta';
 
+function norm(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, 'and')
+    .replace(/['’"`]/g, '')
+    .replace(/klown/g, 'clown')
+    .replace(/homediddily/g, 'homediddly')
+    .replace(/cancelled/g, 'canceled')
+    .replace(/\bpart\s+(?:one|1)\b/g, '1')
+    .replace(/\bpart\s+(?:two|2)\b/g, '2')
+    .replace(/\b(?:volumes?|vol\.?)\s*(?:i\s*and\s*ii|1\s*and\s*2|i\s*&\s*ii|1\s*&\s*2)\b/g, '1 and 2')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function titlesMatch(expected, actual) {
+  const nExp = norm(expected);
+  const nAct = norm(actual);
+  if (!nExp || !nAct) return false;
+  if (nExp === nAct) return true;
+  if (nExp.includes(nAct) || nAct.includes(nExp)) return true;
+  return false;
+}
+
 async function fetchJson(url) {
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Springfield3000-Validator/1.0' },
@@ -14,30 +41,43 @@ async function fetchJson(url) {
 }
 
 async function validateCinemeta() {
-  console.log('🔍 Starting Cinemeta validation for Springfield 3000...\n');
+  console.log(`🔍 Starting Cinemeta validation for ${SAGAS.length} sagas and ${MOVIES.length} movies...\n`);
   let errors = 0;
   let warnings = 0;
 
   // 1. Validate Feature Films
-  console.log('🎬 1. Validating 5 Feature Films...');
+  console.log(`🎬 1. Validating ${MOVIES.length} Feature Films...`);
   for (const movie of MOVIES) {
     try {
       const data = await fetchJson(`${CINEMETA_URL}/movie/${movie.id}.json`);
       if (!data.meta || data.meta.id !== movie.id) {
-        console.error(`❌ Movie ${movie.id} (${movie.name.en}): ID mismatch in Cinemeta.`);
+        console.error(`  ❌ Movie ${movie.id} (${movie.name.en}): ID mismatch in Cinemeta.`);
         errors++;
+        continue;
+      }
+
+      const cName = data.meta.name || '';
+      const cYear = String(data.meta.year || '');
+      const expYear = String(movie.releaseInfo || '');
+
+      if (!titlesMatch(movie.name.en, cName)) {
+        console.error(`  ❌ Movie ${movie.id} title mismatch! Expected: "${movie.name.en}", Cinemeta: "${cName}"`);
+        errors++;
+      } else if (expYear && cYear && expYear !== cYear) {
+        console.warn(`  ⚠️ Movie ${movie.id} year difference: expected ${expYear}, Cinemeta has ${cYear}`);
+        warnings++;
       } else {
-        console.log(`  ✅ ${movie.id} -> Cinemeta: "${data.meta.name}" (Year: ${data.meta.year})`);
+        console.log(`  ✅ ${movie.id} -> Cinemeta: "${cName}" (${cYear || expYear})`);
       }
     } catch (err) {
-      console.error(`❌ Failed to fetch movie ${movie.id}: ${err.message}`);
+      console.error(`  ❌ Failed to fetch movie ${movie.id}: ${err.message}`);
       errors++;
     }
   }
 
   // 2. Fetch Cinemeta Video Indexes for The Simpsons and Futurama
   console.log('\n📺 2. Fetching Cinemeta Series Index...');
-  const cinemetaEpisodes = new Map(); // key: `${imdbId}:${season}:${episode}` -> Cinemeta Video Object
+  const cinemetaEpisodes = new Map();
 
   const seriesIds = [
     { name: 'The Simpsons', imdb: 'tt0096697' },
@@ -56,15 +96,15 @@ async function validateCinemeta() {
         cinemetaEpisodes.set(key, v);
       }
     } catch (err) {
-      console.error(`❌ Failed to fetch series catalog for ${series.name}: ${err.message}`);
+      console.error(`  ❌ Failed to fetch series catalog for ${series.name}: ${err.message}`);
       errors++;
     }
   }
 
-  // 3. Validate Every Episode Across All 31 Sagas
-  console.log('\n🍩 3. Validating Saga Episodes against Cinemeta Index...');
+  // 3. Validate Every Episode Across All Sagas
+  console.log(`\n🍩 3. Validating Episode References Across ${SAGAS.length} Sagas...`);
   let totalEpisodesChecked = 0;
-  const missingEpisodes = [];
+  let titleMatches = 0;
 
   for (const saga of SAGAS) {
     for (const ep of saga.episodes) {
@@ -74,17 +114,28 @@ async function validateCinemeta() {
       const cinemetaEp = cinemetaEpisodes.get(key);
 
       if (!cinemetaEp) {
-        missingEpisodes.push({ sagaId: saga.id, key, title: ep.title.en });
         console.error(`  ❌ [${saga.id}] Episode missing in Cinemeta: S${ep.season}E${ep.episode} ("${ep.title.en}") -> Key: ${key}`);
         errors++;
+        continue;
+      }
+
+      const cTitle = cinemetaEp.name || cinemetaEp.title || '';
+      if (!titlesMatch(ep.title.en, cTitle)) {
+        console.error(`  ❌ [${saga.id}] Title mismatch at S${ep.season}E${ep.episode}!`);
+        console.error(`     Expected : "${ep.title.en}"`);
+        console.error(`     Cinemeta : "${cTitle}" (Key: ${key})`);
+        errors++;
+      } else {
+        titleMatches++;
       }
     }
   }
 
   console.log(`\n========================================`);
   console.log(`📊 Summary:`);
-  console.log(`- Checked ${MOVIES.length} movies: all queried.`);
-  console.log(`- Checked ${totalEpisodesChecked} episode references across 31 sagas.`);
+  console.log(`- Checked ${MOVIES.length} movies.`);
+  console.log(`- Checked ${totalEpisodesChecked} episode references across ${SAGAS.length} sagas.`);
+  console.log(`- Title matches verified: ${titleMatches}/${totalEpisodesChecked}`);
   console.log(`- Errors: ${errors}`);
   console.log(`- Warnings: ${warnings}`);
   console.log(`========================================\n`);
@@ -93,7 +144,7 @@ async function validateCinemeta() {
     console.error(`❌ Cinemeta validation failed with ${errors} error(s).`);
     process.exit(1);
   } else {
-    console.log(`✅ ALL MOVIES AND SAGA EPISODES ARE 100% CANONICALLY VALIDATED IN CINEMETA! 🎉`);
+    console.log(`✅ All ${MOVIES.length} movies and ${totalEpisodesChecked} episode references perfectly matched Cinemeta canonical titles and IDs! 🎉`);
   }
 }
 
