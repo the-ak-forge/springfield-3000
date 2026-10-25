@@ -77,14 +77,23 @@ function titlesMatch(expected, actual) {
   return false;
 }
 
-async function fetchJson(url) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'Springfield3000-Validator/1.0' },
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status} from ${url}`);
+async function fetchJson(url, retries = 2, timeoutMs = 15000) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'Springfield3000-Validator/1.0' },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} from ${url}`);
+      }
+      return await res.json();
+    } catch (err) {
+      if (attempt === retries) throw err;
+      console.warn(`  ⚠️ Retry ${attempt}/${retries} for ${url} (${err.message})`);
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
   }
-  return res.json();
 }
 
 async function validateCinemeta() {
@@ -204,7 +213,7 @@ async function validateCinemeta() {
     console.error(`❌ Cinemeta validation failed with ${errors} error(s).`);
     process.exit(1);
   } else {
-    console.log(`✅ All ${MOVIES.length} movies and ${totalEpisodesChecked} episode references (including all 37 Treehouse of Horror and all Futurama sagas) passed strict canonical title & ID verification! 🎉`);
+    console.log(`✅ All ${MOVIES.length} movies and ${totalEpisodesChecked} episode references across ${SAGAS.length} sagas passed strict canonical title & ID verification! 🎉`);
   }
 }
 
