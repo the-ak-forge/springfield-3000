@@ -37,6 +37,9 @@ const HTML_SECURITY_HEADERS: Record<string, string> = {
 const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
 const CACHE_CONTROL_MANIFEST = 'public, max-age=300, stale-while-revalidate=60';
+const CACHE_CONTROL_STATIC = 'public, max-age=604800, stale-while-revalidate=86400';
+
+const DONUT_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#F472B6"/><circle cx="50" cy="50" r="18" fill="#020617"/><circle cx="36" cy="30" r="3" fill="#FBBF24"/><circle cx="64" cy="32" r="3" fill="#38BDF8"/><circle cx="48" cy="22" r="3" fill="#4ADE80"/><circle cx="68" cy="48" r="3" fill="#FBBF24"/><circle cx="28" cy="52" r="3" fill="#38BDF8"/><circle cx="42" cy="74" r="3" fill="#FBBF24"/><circle cx="60" cy="70" r="3" fill="#4ADE80"/></svg>`;
 
 const MOVIE_IDS = MOVIES.map((m) => m.id);
 const ID_PREFIXES = ['simpsons-', 'futurama-', 'crossover-', ...MOVIE_IDS];
@@ -296,8 +299,20 @@ export default {
       let m: RegExpMatchArray | null;
 
       // 4. Flat Route Dispatcher (Single-pass regex matching)
+      // 4.0 Favicon
+      if (path === '/favicon.ico' || path.endsWith('/favicon.ico')) {
+        response = new Response(DONUT_FAVICON_SVG, {
+          status: 200,
+          headers: {
+            'Content-Type': 'image/svg+xml; charset=utf-8',
+            'Cache-Control': CACHE_CONTROL_STATIC,
+            ...CORS_HEADERS,
+            ...SECURITY_HEADERS,
+          },
+        });
+      }
       // 4.1 Configure Page
-      if (path === '/' || path === '/configure') {
+      else if (path === '/' || path === '/configure') {
         response = htmlResponse(renderConfigurePage(undefined, ADDON_VERSION));
       } else if ((m = path.match(/^\/([^/]+)\/configure$/))) {
         const userConfig = decodeConfig(m[1]);

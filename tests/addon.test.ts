@@ -473,6 +473,16 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(configRes.headers.get('Cache-Control')).toContain('no-store');
   });
 
+  it('should serve bespoke SVG donut favicon at /favicon.ico', async () => {
+    const res = await worker.fetch(new Request('https://springfield-3000.workers.dev/favicon.ico'), {});
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toContain('image/svg+xml');
+    expect(res.headers.get('Cache-Control')).toContain('max-age=604800');
+    const svg = await res.text();
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('viewBox');
+  });
+
   it('should utilize edge cache with versioned key', async () => {
     const cachedBody = JSON.stringify({ cached: true });
     const mockCache = {
