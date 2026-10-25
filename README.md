@@ -80,7 +80,7 @@ npm run deploy
 ```text
 springfield3000/
 ├── assets/
-│   └── posters/            # Curated 2:3 vertical posters (EN + ES)
+│   └── posters/            # 62 curated 2:3 vertical posters (31 EN + 31 ES)
 ├── scripts/
 │   └── generate-posters.js # Automated typography poster composition engine
 ├── src/
@@ -92,7 +92,7 @@ springfield3000/
 │   ├── types.ts            # Stremio Addon Protocol v1 TypeScript definitions
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
 ├── tests/
-│   └── addon.test.ts       # 29 automated unit and integration tests
+│   └── addon.test.ts       # 30 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
 ├── wrangler.toml

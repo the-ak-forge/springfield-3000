@@ -13,7 +13,7 @@ import {
 } from './types';
 import { renderConfigurePage } from './views/configure';
 
-export const ADDON_VERSION = '1.0.17';
+export const ADDON_VERSION = '1.0.18';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -35,7 +35,10 @@ const HTML_SECURITY_HEADERS: Record<string, string> = {
 
 const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
-const CACHE_CONTROL_MANIFEST = 'no-cache, no-store, must-revalidate';
+const CACHE_CONTROL_MANIFEST = 'public, max-age=300, stale-while-revalidate=60';
+
+const MOVIE_IDS = ['tt0471711', 'tt1054485', 'tt1054486', 'tt1054487', 'tt0462538'];
+const ID_PREFIXES = ['simpsons-', 'futurama-', 'crossover-', ...MOVIE_IDS];
 
 export function safeDecodePath(pathname: string): string {
   try {
@@ -122,10 +125,10 @@ export function buildManifest(config: UserConfig): StremioManifest {
       {
         name: 'meta',
         types: ['series', 'movie'],
-        idPrefixes: ['simpsons-', 'futurama-', 'crossover-', 'tt'],
+        idPrefixes: ID_PREFIXES,
       },
     ],
-    idPrefixes: ['simpsons-', 'futurama-', 'crossover-', 'tt'],
+    idPrefixes: ID_PREFIXES,
     behaviorHints: {
       configurable: true,
       configurationRequired: false,
@@ -184,26 +187,11 @@ export function toMetaDetail(
 
   const videos: StremioVideo[] = saga.episodes.map((ep, index) => {
     const showImdb = ep.imdbId ?? saga.defaultImdbId;
-    const isMovie = Boolean(ep.isMovie);
-    const canonicalVideoId = isMovie ? showImdb : `${showImdb}:${ep.season}:${ep.episode}`;
-    const codeLabel = isMovie
-      ? (lang === 'en' ? 'Movie' : 'Película')
-      : `${prefixTag}${String(ep.season).padStart(2, '0')}E${String(ep.episode).padStart(2, '0')}`;
+    const canonicalVideoId = `${showImdb}:${ep.season}:${ep.episode}`;
+    const codeLabel = `${prefixTag}${String(ep.season).padStart(2, '0')}E${String(ep.episode).padStart(2, '0')}`;
 
     // Synthetic chronological release date so Stremio preserves exact saga order
     const releasedDate = new Date(Date.UTC(2000, 0, index + 1)).toISOString();
-
-    const overviewDefault = isMovie
-      ? (lang === 'en'
-          ? `${saga.name.en} — Feature Film (${showImdb}).`
-          : `${saga.name.es} — Largometraje (${showImdb}).`)
-      : (lang === 'en'
-          ? `${saga.name.en} — Original episode ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`
-          : `${saga.name.es} — Episodio original ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`);
-
-    const thumbnail = isMovie
-      ? (ep.thumbnail ?? `https://images.metahub.space/background/medium/${showImdb}/img`)
-      : `https://episodes.metahub.space/${showImdb}/${ep.season}/${ep.episode}/w780.jpg`;
 
     return {
       id: canonicalVideoId,
@@ -211,8 +199,12 @@ export function toMetaDetail(
       season: 1,
       episode: index + 1,
       released: ep.released ?? releasedDate,
-      overview: ep.overview?.[lang] ?? overviewDefault,
-      thumbnail,
+      overview:
+        ep.overview?.[lang] ??
+        (lang === 'en'
+          ? `${saga.name.en} — Original episode ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`
+          : `${saga.name.es} — Episodio original ${codeLabel} (${showImdb}:${ep.season}:${ep.episode}).`),
+      thumbnail: `https://episodes.metahub.space/${showImdb}/${ep.season}/${ep.episode}/w780.jpg`,
     };
   });
 
@@ -437,7 +429,7 @@ export default {
                 const assetUrl = new URL(`/posters/${posterLang}/${saga.id}.jpg`, request.url);
                 const assetReq = new Request(assetUrl.toString());
                 const assetRes = await env.ASSETS.fetch(assetReq);
-                if (assetRes.ok || assetRes.status === 304) {
+                if (assetRes.ok) {
                   upstream = assetRes;
                 }
               } catch {

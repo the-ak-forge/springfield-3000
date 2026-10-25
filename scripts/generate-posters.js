@@ -170,7 +170,8 @@ async function main() {
   fs.mkdirSync(esDir, { recursive: true });
   fs.mkdirSync(enDir, { recursive: true });
 
-  console.log(`🚀 Generating posters for ${SAGAS.length} sagas in 2 languages (64 posters total)...`);
+  const totalPosters = SAGAS.length * 2;
+  console.log(`🚀 Generating posters for ${SAGAS.length} sagas in 2 languages (${totalPosters} posters total)...`);
 
   let errorCount = 0;
   for (let i = 0; i < SAGAS.length; i++) {
@@ -201,7 +202,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('✅ All 64 posters generated successfully in assets/posters/');
+  console.log(`✅ All ${totalPosters} posters generated successfully in assets/posters/`);
 }
 
 main().catch((err) => {

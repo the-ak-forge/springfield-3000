@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MOVIES, MOVIES_BY_ID } from '../src/data/movies';
 import { SAGAS, SAGAS_BY_ID } from '../src/data/sagas';
 import worker, {
   ADDON_VERSION,
@@ -23,6 +24,33 @@ describe('Springfield 3000 Data Integrity', () => {
     expect(simpsons.length).toBe(16);
     expect(futurama.length).toBe(14);
     expect(crossover.length).toBe(1);
+  });
+
+  it('should have exactly 5 curated feature films with canonical IMDb IDs', () => {
+    expect(MOVIES.length).toBe(5);
+    expect(MOVIES_BY_ID.size).toBe(5);
+
+    const expectedMovieIds = [
+      'tt0471711', // Bender's Big Score
+      'tt1054485', // The Beast with a Billion Backs
+      'tt1054486', // Bender's Game
+      'tt1054487', // Into the Wild Green Yonder
+      'tt0462538', // The Simpsons Movie
+    ];
+
+    for (const expectedId of expectedMovieIds) {
+      const movie = MOVIES_BY_ID.get(expectedId);
+      expect(movie).toBeDefined();
+      expect(movie?.id).toBe(expectedId);
+      expect(movie?.name.en).toBeTruthy();
+      expect(movie?.name.es).toBeTruthy();
+      expect(movie?.description.en).toBeTruthy();
+      expect(movie?.description.es).toBeTruthy();
+      expect(movie?.poster.startsWith('https://')).toBe(true);
+      expect(movie?.background.startsWith('https://')).toBe(true);
+      expect(movie?.genres.length).toBeGreaterThan(0);
+      expect(Number(movie?.releaseInfo)).toBeGreaterThan(2000);
+    }
   });
 
   it('should have unique saga IDs', () => {
@@ -191,6 +219,17 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(json.catalogs[0].type).toBe('series');
     expect(json.catalogs[1].id).toBe('springfield3000-movies');
     expect(json.catalogs[1].type).toBe('movie');
+    expect(json.idPrefixes).toEqual([
+      'simpsons-',
+      'futurama-',
+      'crossover-',
+      'tt0471711',
+      'tt1054485',
+      'tt1054486',
+      'tt1054487',
+      'tt0462538',
+    ]);
+    expect(json.idPrefixes).not.toContain('tt');
     expect(json.stremioAddonsConfig.issuer).toBe('https://stremio-addons.net');
     expect(json.stremioAddonsConfig.signature).toBeTruthy();
   });
@@ -380,7 +419,7 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
       new Request('https://springfield-3000.workers.dev/manifest.json'),
       {}
     );
-    expect(manifestRes.headers.get('Cache-Control')).toContain('no-store');
+    expect(manifestRes.headers.get('Cache-Control')).toContain('max-age=300');
 
     const metaRes = await worker.fetch(
       new Request('https://springfield-3000.workers.dev/meta/series/simpsons-bob-saga.json'),
