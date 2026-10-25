@@ -85,7 +85,8 @@ springfield3000/
 ├── assets/
 │   └── posters/            # 62 curated 2:3 vertical posters (31 EN + 31 ES)
 ├── scripts/
-│   └── generate-posters.js # Automated typography poster composition engine
+│   ├── generate-posters.js # Automated typography poster composition engine
+│   └── validate-cinemeta.js # Live Cinemeta API canonical integrity validator
 ├── src/
 │   ├── data/
 │   │   ├── movies.ts       # Dataset of 5 complete feature films
@@ -93,11 +94,13 @@ springfield3000/
 │   ├── views/
 │   │   └── configure.ts    # Responsive dark configurator UI
 │   ├── types.ts            # Stremio Addon Protocol v1 TypeScript definitions
+│   ├── version.ts          # Centralized version constant
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
 ├── tests/
-│   └── addon.test.ts       # 30 automated unit and integration tests
+│   └── addon.test.ts       # 34 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.scripts.json
 ├── wrangler.toml
 └── README.md
 ```
