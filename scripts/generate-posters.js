@@ -75,14 +75,22 @@ async function renderPoster(saga, index, lang, stillResized) {
   const rawTitle = saga.name[lang];
   const lines = wrapTitle(rawTitle);
 
-  const numPadded = String(index + 1).padStart(2, '0');
+  const numMatch = rawTitle.match(/^(\d+)\./);
+  const numPadded = numMatch ? numMatch[1].padStart(2, '0') : String(index + 1).padStart(2, '0');
   const collectionLabel =
     saga.universe === 'crossover'
       ? lang === 'es' ? 'EVENTO ESPECIAL' : 'SPECIAL EVENT'
       : lang === 'es' ? `COLECCIÓN ${numPadded}` : `COLLECTION ${numPadded}`;
 
   const epCount = saga.episodes.length;
-  const epLabel = lang === 'es' ? `${epCount} EPISODIOS` : `${epCount} EPISODES`;
+  const epLabel =
+    lang === 'es'
+      ? `${epCount} ${epCount === 1 ? 'EPISODIO' : 'EPISODIOS'}`
+      : `${epCount} ${epCount === 1 ? 'EPISODE' : 'EPISODES'}`;
+
+  if (lines.length > 3) {
+    console.warn(`⚠️ [${saga.id} (${lang})] Title exceeds 3 lines (${lines.length} lines): "${rawTitle}"`);
+  }
 
   // Dynamic vertical layout based on number of lines
   let labelY = 675;

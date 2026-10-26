@@ -28,11 +28,14 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
 
-const HTML_SECURITY_HEADERS: Record<string, string> = {
-  ...SECURITY_HEADERS,
-  'Content-Security-Policy':
-    "default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';",
-};
+function buildHtmlSecurityHeaders(nonce?: string): Record<string, string> {
+  const scriptSrc = nonce ? `'nonce-${nonce}'` : "'unsafe-inline'";
+  return {
+    ...SECURITY_HEADERS,
+    'Content-Security-Policy':
+      `default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src ${scriptSrc}; base-uri 'none'; form-action 'none'; frame-ancestors 'none';`,
+  };
+}
 
 const CACHE_CONTROL_CATALOG = 'public, max-age=1800, stale-while-revalidate=600';
 const CACHE_CONTROL_META = 'public, max-age=21600, stale-while-revalidate=7200';
@@ -62,7 +65,7 @@ export function decodeConfig(rawSegment?: string): UserConfig {
     sagas: SAGAS.map((s) => s.id),
   };
 
-  if (!rawSegment || rawSegment === 'default') {
+  if (!rawSegment || rawSegment === 'default' || rawSegment.length > 2048) {
     return fallback;
   }
 
@@ -234,13 +237,13 @@ export function jsonResponse(
   });
 }
 
-export function htmlResponse(html: string, status = 200): Response {
+export function htmlResponse(html: string, status = 200, nonce?: string): Response {
   return new Response(html, {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
-      ...HTML_SECURITY_HEADERS,
+      ...buildHtmlSecurityHeaders(nonce),
     },
   });
 }
@@ -313,10 +316,12 @@ export default {
       }
       // 4.1 Configure Page
       else if (path === '/' || path === '/configure') {
-        response = htmlResponse(renderConfigurePage(undefined, ADDON_VERSION));
+        const nonce = crypto.randomUUID().replace(/-/g, '');
+        response = htmlResponse(renderConfigurePage(undefined, ADDON_VERSION, nonce), 200, nonce);
       } else if ((m = path.match(/^\/([^/]+)\/configure$/))) {
         const userConfig = decodeConfig(m[1]);
-        response = htmlResponse(renderConfigurePage(userConfig, ADDON_VERSION));
+        const nonce = crypto.randomUUID().replace(/-/g, '');
+        response = htmlResponse(renderConfigurePage(userConfig, ADDON_VERSION, nonce), 200, nonce);
       }
       // 4.2 Manifest Routes
       else if (path === '/manifest.json') {

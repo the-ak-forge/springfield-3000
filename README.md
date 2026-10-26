@@ -97,7 +97,7 @@ springfield3000/
 │   ├── version.ts          # Centralized version constant
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
 ├── tests/
-│   └── addon.test.ts       # 34 automated unit and integration tests
+│   └── addon.test.ts       # 35 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.scripts.json

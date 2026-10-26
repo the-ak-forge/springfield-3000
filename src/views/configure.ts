@@ -11,7 +11,15 @@ export function escHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function renderConfigurePage(initialConfig?: UserConfig, version = ADDON_VERSION): string {
+export function safeJson(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+export function renderConfigurePage(
+  initialConfig?: UserConfig,
+  version = ADDON_VERSION,
+  nonce?: string
+): string {
   const defaultConfig: UserConfig = initialConfig ?? {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),
@@ -26,9 +34,10 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = ADDON_
     universe: s.universe,
     name: s.name,
     description: s.description,
-    poster: s.poster,
     episodeCount: s.episodes.length,
   }));
+
+  const nonceAttr = nonce ? ` nonce="${escHtml(nonce)}"` : '';
 
   return `<!DOCTYPE html>
 <html lang="${escHtml(defaultConfig.lang)}" class="dark">
@@ -140,7 +149,7 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = ADDON_
     }
     .saga-item.checked { background: rgba(2, 6, 23, 0.95); border-color: #334155; }
     .saga-checkbox { width: 1rem; height: 1rem; accent-color: #facc15; cursor: pointer; flex-shrink: 0; }
-    .saga-img { width: 4rem; height: 3rem; border-radius: 0.5rem; object-fit: cover; background: #1e293b; flex-shrink: 0; border: 1px solid #1e293b; }
+    .saga-img { width: 3rem; height: 4.5rem; border-radius: 0.5rem; object-fit: cover; background: #1e293b; flex-shrink: 0; border: 1px solid #1e293b; }
     .saga-body { flex: 1; min-width: 0; }
     .saga-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
     .saga-name { font-size: 0.8rem; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -219,10 +228,10 @@ export function renderConfigurePage(initialConfig?: UserConfig, version = ADDON_
     </footer>
   </div>
 
-  <script>
-    const SAGAS_DATA = ${JSON.stringify(clientSagasPayload)};
-    const INITIAL_CONFIG = ${JSON.stringify(defaultConfig)};
-    const CURRENT_VERSION = ${JSON.stringify(version)};
+  <script${nonceAttr}>
+    const SAGAS_DATA = ${safeJson(clientSagasPayload)};
+    const INITIAL_CONFIG = ${safeJson(defaultConfig)};
+    const CURRENT_VERSION = ${safeJson(version)};
     const COUNTS = {
       simpsons: ${simpsonsCount},
       futurama: ${futuramaCount},

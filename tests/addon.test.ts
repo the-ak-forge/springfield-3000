@@ -8,6 +8,7 @@ import worker, {
   decodeConfig,
   safeDecodePath,
 } from '../src/index';
+import { safeJson } from '../src/views/configure';
 
 function toBase64Url(obj: unknown): string {
   const json = JSON.stringify(obj);
@@ -214,10 +215,22 @@ describe('Configuration & Parser Resilience', () => {
     expect(decoded.sagas.length).toBe(31);
   });
 
-  it('should gracefully handle malformed base64', () => {
+  it('should gracefully handle malformed or oversized base64', () => {
     const decoded = decodeConfig('!!!not-valid-base64???');
     expect(decoded.lang).toBe('en');
     expect(decoded.sagas.length).toBe(31);
+
+    const oversized = 'a'.repeat(3000);
+    const decodedOversized = decodeConfig(oversized);
+    expect(decodedOversized.lang).toBe('en');
+    expect(decodedOversized.sagas.length).toBe(31);
+  });
+
+  it('should escape < characters in safeJson to prevent script tag breakout', () => {
+    const payload = { text: '</script><script>alert(1)</script>' };
+    const serialized = safeJson(payload);
+    expect(serialized).not.toContain('</script>');
+    expect(serialized).toContain('\\u003c/script>');
   });
 
   it('should handle malformed percent-encoding in paths without throwing', () => {
@@ -296,24 +309,37 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
   });
 
   it('should serve direct localized poster endpoint with CORS and return 404 for unknown IDs', async () => {
+    const mockAssets = {
+      fetch: async (req: Request) => {
+        const url = new URL(req.url);
+        if (url.pathname.startsWith('/posters/')) {
+          return new Response('mock-poster-binary', {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          });
+        }
+        return new Response('Not Found', { status: 404 });
+      },
+    };
+
     const validReqEn = new Request(
       'https://springfield-3000.workers.dev/poster/en/simpsons-bob-saga.jpg'
     );
-    const validResEn = await worker.fetch(validReqEn, {});
-    expect([200, 302, 502]).toContain(validResEn.status);
+    const validResEn = await worker.fetch(validReqEn, { ASSETS: mockAssets as any });
+    expect(validResEn.status).toBe(200);
     expect(validResEn.headers.get('Access-Control-Allow-Origin')).toBe('*');
 
     const validReqEs = new Request(
       'https://springfield-3000.workers.dev/poster/es/simpsons-bob-saga.jpg'
     );
-    const validResEs = await worker.fetch(validReqEs, {});
-    expect([200, 302, 502]).toContain(validResEs.status);
+    const validResEs = await worker.fetch(validReqEs, { ASSETS: mockAssets as any });
+    expect(validResEs.status).toBe(200);
     expect(validResEs.headers.get('Access-Control-Allow-Origin')).toBe('*');
 
     const invalidReq = new Request(
       'https://springfield-3000.workers.dev/poster/es/non-existent-saga.jpg'
     );
-    const invalidRes = await worker.fetch(invalidReq, {});
+    const invalidRes = await worker.fetch(invalidReq, { ASSETS: mockAssets as any });
     expect(invalidRes.status).toBe(404);
   });
 
@@ -438,17 +464,19 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(res2.status).toBe(404);
   });
 
-  it('should serve /configure with strict CSP and no external cdn.tailwindcss.com script', async () => {
+  it('should serve /configure with strict nonce-based CSP and no external cdn.tailwindcss.com script', async () => {
     const req = new Request('https://springfield-3000.workers.dev/configure');
     const res = await worker.fetch(req, {});
     expect(res.status).toBe(200);
 
     const html = await res.text();
     expect(html).not.toContain('cdn.tailwindcss.com');
+    expect(html).toContain('width: 3rem; height: 4.5rem;');
     const csp = res.headers.get('Content-Security-Policy') || '';
     expect(csp).toContain("base-uri 'none'");
     expect(csp).toContain("form-action 'none'");
     expect(csp).toContain("img-src 'self' data:");
+    expect(csp).toMatch(/script-src 'nonce-[a-f0-9]+'/);
     expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');
   });
