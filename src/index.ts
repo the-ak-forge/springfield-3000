@@ -33,7 +33,7 @@ function buildHtmlSecurityHeaders(nonce?: string): Record<string, string> {
   return {
     ...SECURITY_HEADERS,
     'Content-Security-Policy':
-      `default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src ${scriptSrc}; base-uri 'none'; form-action 'none'; frame-ancestors 'none';`,
+      `default-src 'self'; img-src 'self' https://images.metahub.space data:; style-src 'unsafe-inline'; script-src ${scriptSrc}; base-uri 'none'; form-action 'none'; frame-ancestors 'none';`,
   };
 }
 
@@ -63,6 +63,7 @@ export function decodeConfig(rawSegment?: string): UserConfig {
   const fallback: UserConfig = {
     lang: 'en',
     sagas: SAGAS.map((s) => s.id),
+    movies: MOVIES.map((m) => m.id),
   };
 
   if (!rawSegment || rawSegment === 'default' || rawSegment.length > 2048) {
@@ -90,10 +91,31 @@ export function decodeConfig(rawSegment?: string): UserConfig {
       ),
     ];
 
-    // If configuration results in 0 valid sagas, fall back to all sagas
+    const hasMoviesArray = Array.isArray(parsed.movies);
+    const rawMovies = hasMoviesArray ? parsed.movies! : [];
+    const validMovies = hasMoviesArray
+      ? [
+          ...new Set(
+            rawMovies.filter(
+              (id): id is string => typeof id === 'string' && MOVIES_BY_ID.has(id)
+            )
+          ),
+        ]
+      : fallback.movies!;
+
+    // If configuration results in 0 valid sagas and no valid custom movies, fall back to full defaults
+    if (validSagas.length === 0 && (!hasMoviesArray || validMovies.length === 0)) {
+      return {
+        lang,
+        sagas: fallback.sagas,
+        movies: fallback.movies,
+      };
+    }
+
     return {
       lang,
-      sagas: validSagas.length > 0 ? validSagas : fallback.sagas,
+      sagas: validSagas,
+      movies: validMovies,
     };
   } catch {
     return fallback;
@@ -102,19 +124,25 @@ export function decodeConfig(rawSegment?: string): UserConfig {
 
 export function buildManifest(config: UserConfig): StremioManifest {
   const isEn = config.lang === 'en';
+  const activeMovies = config.movies ?? MOVIES.map((m) => m.id);
 
-  const catalogs: StremioManifest['catalogs'] = [
-    {
+  const catalogs: StremioManifest['catalogs'] = [];
+
+  if (config.sagas.length > 0) {
+    catalogs.push({
       type: 'series',
       id: 'springfield3000-sagas',
       name: 'Springfield 3000',
-    },
-    {
+    });
+  }
+
+  if (activeMovies.length > 0) {
+    catalogs.push({
       type: 'movie',
       id: 'springfield3000-movies',
       name: isEn ? 'Springfield 3000 (Movies)' : 'Springfield 3000 (Películas)',
-    },
-  ];
+    });
+  }
 
   return {
     id: 'org.springfield3000.curated.addon',
@@ -384,7 +412,11 @@ export default {
         if (catalogId !== 'springfield3000-movies') {
           response = jsonResponse({ metas: [], error: 'Catalog not found' }, 'no-store', 404);
         } else {
-          const metas = MOVIES.map((movie) => toMovieMeta(movie, userConfig.lang));
+          const activeMovieIds = userConfig.movies ?? MOVIES.map((m) => m.id);
+          const activeMovies = activeMovieIds
+            .map((id) => MOVIES_BY_ID.get(id))
+            .filter((movie): movie is MovieDefinition => Boolean(movie));
+          const metas = activeMovies.map((movie) => toMovieMeta(movie, userConfig.lang));
           response = jsonResponse({ metas }, CACHE_CONTROL_CATALOG);
         }
       }

@@ -1,3 +1,4 @@
+import { MOVIES } from '../data/movies';
 import { SAGAS } from '../data/sagas';
 import { UserConfig } from '../types';
 import { ADDON_VERSION } from '../version';
@@ -20,14 +21,16 @@ export function renderConfigurePage(
   version = ADDON_VERSION,
   nonce?: string
 ): string {
-  const defaultConfig: UserConfig = initialConfig ?? {
-    lang: 'en',
-    sagas: SAGAS.map((s) => s.id),
+  const defaultConfig: UserConfig = {
+    lang: initialConfig?.lang ?? 'en',
+    sagas: initialConfig?.sagas ?? SAGAS.map((s) => s.id),
+    movies: initialConfig?.movies ?? MOVIES.map((m) => m.id),
   };
 
   const simpsonsCount = SAGAS.filter((s) => s.universe === 'simpsons').length;
   const futuramaCount = SAGAS.filter((s) => s.universe === 'futurama').length;
   const crossoverCount = SAGAS.filter((s) => s.universe === 'crossover').length;
+  const moviesCount = MOVIES.length;
 
   const clientSagasPayload = SAGAS.map((s) => ({
     id: s.id,
@@ -35,6 +38,15 @@ export function renderConfigurePage(
     name: s.name,
     description: s.description,
     episodeCount: s.episodes.length,
+  }));
+
+  const clientMoviesPayload = MOVIES.map((m) => ({
+    id: m.id,
+    universe: m.universe,
+    name: m.name,
+    description: m.description,
+    poster: m.poster,
+    releaseInfo: m.releaseInfo,
   }));
 
   const nonceAttr = nonce ? ` nonce="${escHtml(nonce)}"` : '';
@@ -131,11 +143,11 @@ export function renderConfigurePage(
     .items-grid {
       padding: 1rem;
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
       gap: 0.75rem;
       border-top: 1px solid rgba(30, 41, 59, 0.8);
     }
-    @media (min-width: 640px) { .items-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 640px) { .items-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     .saga-item {
       display: flex;
       align-items: center;
@@ -146,17 +158,19 @@ export function renderConfigurePage(
       background: rgba(2, 6, 23, 0.5);
       cursor: pointer;
       transition: all 0.15s ease;
+      min-width: 0;
     }
     .saga-item.checked { background: rgba(2, 6, 23, 0.95); border-color: #334155; }
     .saga-checkbox { width: 1rem; height: 1rem; accent-color: #facc15; cursor: pointer; flex-shrink: 0; }
     .saga-img { width: 3rem; height: 4.5rem; border-radius: 0.5rem; object-fit: cover; background: #1e293b; flex-shrink: 0; border: 1px solid #1e293b; }
     .saga-body { flex: 1; min-width: 0; }
-    .saga-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-    .saga-name { font-size: 0.8rem; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .saga-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-width: 0; }
+    .saga-name { font-size: 0.8rem; font-weight: 600; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     .saga-badge { font-size: 0.65rem; font-weight: 600; padding: 0.125rem 0.375rem; border-radius: 0.25rem; border: 1px solid; flex-shrink: 0; }
     .badge-simpsons { border-color: rgba(250, 204, 21, 0.4); background: rgba(250, 204, 21, 0.1); color: #fde047; }
     .badge-futurama { border-color: rgba(52, 211, 153, 0.4); background: rgba(52, 211, 153, 0.1); color: #6ee7b7; }
     .badge-crossover { border-color: rgba(168, 85, 247, 0.4); background: rgba(168, 85, 247, 0.1); color: #d8b4fe; }
+    .badge-movies { border-color: rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.1); color: #7dd3fc; }
     .saga-desc { font-size: 0.7rem; color: #94a3b8; margin-top: 0.2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
     .footer {
       position: sticky;
@@ -230,12 +244,14 @@ export function renderConfigurePage(
 
   <script${nonceAttr}>
     const SAGAS_DATA = ${safeJson(clientSagasPayload)};
+    const MOVIES_DATA = ${safeJson(clientMoviesPayload)};
     const INITIAL_CONFIG = ${safeJson(defaultConfig)};
     const CURRENT_VERSION = ${safeJson(version)};
     const COUNTS = {
       simpsons: ${simpsonsCount},
       futurama: ${futuramaCount},
-      crossover: ${crossoverCount}
+      crossover: ${crossoverCount},
+      movies: ${moviesCount}
     };
 
     function esc(s) {
@@ -249,13 +265,13 @@ export function renderConfigurePage(
 
     const I18N = {
       en: {
-        subtitle: 'Binge-watch the best of The Simpsons & Futurama in curated sagas and story arcs.',
+        subtitle: 'Binge-watch the best of The Simpsons & Futurama in curated sagas, story arcs, and feature films.',
         selectAll: 'Select All',
         selectNone: 'Clear All',
         copyBtn: '📋 Copy Link',
         copiedBtn: '✅ Copied!',
         installBtn: '🚀 Install Addon',
-        selectAtLeastOne: '⚠️ Select at least 1 saga',
+        selectAtLeastOne: '⚠️ Select at least 1 item',
         readyTitle: 'Ready to watch',
         readyDesc: 'Click Install to open in Stremio. (If already installed, uninstall it first in My Addons to force poster refresh).',
         selectedCount: (n, total) => n + ' of ' + total + ' selected',
@@ -275,17 +291,22 @@ export function renderConfigurePage(
             title: '🌀 Official Crossover',
             subtitle: 'Springfield meets the 31st Century',
             badgeClass: 'badge-crossover'
+          },
+          movies: {
+            title: '🎬 Feature Films',
+            subtitle: COUNTS.movies + ' Full-length movies (The Simpsons Movie & Futurama epics)',
+            badgeClass: 'badge-movies'
           }
         }
       },
       es: {
-        subtitle: 'Disfruta lo mejor de Los Simpson y Futurama en sagas temáticas y arcos correlativos.',
+        subtitle: 'Disfruta lo mejor de Los Simpson y Futurama en sagas temáticas, arcos correlativos y películas.',
         selectAll: 'Seleccionar Todo',
         selectNone: 'Limpiar',
         copyBtn: '📋 Copiar Enlace',
         copiedBtn: '✅ ¡Copiado!',
         installBtn: '🚀 Instalar Addon',
-        selectAtLeastOne: '⚠️ Selecciona al menos 1 saga',
+        selectAtLeastOne: '⚠️ Selecciona al menos 1 elemento',
         readyTitle: 'Listo para ver',
         readyDesc: 'Haz clic en Instalar para abrir en Stremio. (Si ya lo tenías instalado, desinstálalo primero en Mis Addons para refrescar las carátulas).',
         selectedCount: (n, total) => n + ' de ' + total + ' activas',
@@ -305,6 +326,11 @@ export function renderConfigurePage(
             title: '🌀 Crossover Oficial',
             subtitle: 'Springfield y el siglo 31 se unen',
             badgeClass: 'badge-crossover'
+          },
+          movies: {
+            title: '🎬 Películas (Largometrajes)',
+            subtitle: COUNTS.movies + ' Largometrajes completos (Los Simpson: La Película y las 4 de Futurama)',
+            badgeClass: 'badge-movies'
           }
         }
       }
@@ -312,7 +338,8 @@ export function renderConfigurePage(
 
     let state = {
       lang: INITIAL_CONFIG.lang === 'es' ? 'es' : 'en',
-      selected: new Set(INITIAL_CONFIG.sagas)
+      selected: new Set(INITIAL_CONFIG.sagas),
+      selectedMovies: new Set(INITIAL_CONFIG.movies || MOVIES_DATA.map(m => m.id))
     };
 
     let manifestUrl = '';
@@ -330,10 +357,14 @@ export function renderConfigurePage(
     function updateUrlsAndCounters() {
       const t = I18N[state.lang];
       const orderedIds = SAGAS_DATA.map(s => s.id).filter(id => state.selected.has(id));
+      const orderedMovieIds = MOVIES_DATA.map(m => m.id).filter(id => state.selectedMovies.has(id));
+      const totalSelected = orderedIds.length + orderedMovieIds.length;
+      const totalAvailable = SAGAS_DATA.length + MOVIES_DATA.length;
+
       const installBtn = document.getElementById('btn-install');
       const copyBtn = document.getElementById('btn-copy');
 
-      if (orderedIds.length === 0) {
+      if (totalSelected === 0) {
         manifestUrl = '';
         installBtn.removeAttribute('href');
         installBtn.textContent = t.selectAtLeastOne;
@@ -345,6 +376,7 @@ export function renderConfigurePage(
         const payload = {
           lang: state.lang,
           sagas: orderedIds,
+          movies: orderedMovieIds,
           v: CURRENT_VERSION
         };
         const encoded = encodeConfigBase64Url(payload);
@@ -362,8 +394,8 @@ export function renderConfigurePage(
       }
 
       document.getElementById('selection-counter').textContent = t.selectedCount(
-        orderedIds.length,
-        SAGAS_DATA.length
+        totalSelected,
+        totalAvailable
       );
     }
 
@@ -384,9 +416,12 @@ export function renderConfigurePage(
       const root = document.getElementById('accordions-root');
       root.innerHTML = '';
 
-      ['simpsons', 'futurama', 'crossover'].forEach((universeKey) => {
-        const groupInfo = t.groups[universeKey];
-        const items = SAGAS_DATA.filter(s => s.universe === universeKey);
+      ['simpsons', 'futurama', 'crossover', 'movies'].forEach((groupKey) => {
+        const groupInfo = t.groups[groupKey];
+        const isMoviesGroup = groupKey === 'movies';
+        const items = isMoviesGroup
+          ? MOVIES_DATA
+          : SAGAS_DATA.filter(s => s.universe === groupKey);
 
         const details = document.createElement('details');
         details.open = true;
@@ -395,7 +430,7 @@ export function renderConfigurePage(
         const summary = document.createElement('summary');
         summary.className = 'group-summary';
         summary.innerHTML =
-          '<div>' +
+          '<div style="min-width: 0;">' +
             '<h2 class="group-title">' + esc(groupInfo.title) + '</h2>' +
             '<p class="group-subtitle">' + esc(groupInfo.subtitle) + '</p>' +
           '</div>' +
@@ -406,32 +441,44 @@ export function renderConfigurePage(
         const grid = document.createElement('div');
         grid.className = 'items-grid';
 
-        items.forEach(saga => {
-          const isChecked = state.selected.has(saga.id);
+        items.forEach(item => {
+          const isChecked = isMoviesGroup
+            ? state.selectedMovies.has(item.id)
+            : state.selected.has(item.id);
           const label = document.createElement('label');
           label.className = 'saga-item' + (isChecked ? ' checked' : '');
 
-          const title = saga.name[state.lang];
-          const desc = saga.description[state.lang];
+          const title = item.name[state.lang];
+          const desc = item.description[state.lang];
+          const posterSrc = isMoviesGroup
+            ? item.poster
+            : '/poster/' + esc(state.lang) + '/' + esc(item.id) + '.jpg';
+          const badgeText = isMoviesGroup
+            ? item.releaseInfo
+            : t.episodesBadge(item.episodeCount);
+          const dataAttr = isMoviesGroup
+            ? 'data-movie-id="' + esc(item.id) + '"'
+            : 'data-saga-id="' + esc(item.id) + '"';
 
           label.innerHTML =
-            '<input type="checkbox" data-saga-id="' + esc(saga.id) + '" ' + (isChecked ? 'checked' : '') + ' class="saga-checkbox" />' +
-            '<img src="/poster/' + esc(state.lang) + '/' + esc(saga.id) + '.jpg" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
+            '<input type="checkbox" ' + dataAttr + ' ' + (isChecked ? 'checked' : '') + ' class="saga-checkbox" />' +
+            '<img src="' + esc(posterSrc) + '" alt="' + esc(title) + '" class="saga-img" loading="lazy" />' +
             '<div class="saga-body">' +
               '<div class="saga-header">' +
                 '<span class="saga-name">' + esc(title) + '</span>' +
-                '<span class="saga-badge ' + esc(groupInfo.badgeClass) + '">' + esc(t.episodesBadge(saga.episodeCount)) + '</span>' +
+                '<span class="saga-badge ' + esc(groupInfo.badgeClass) + '">' + esc(badgeText) + '</span>' +
               '</div>' +
               '<p class="saga-desc">' + esc(desc) + '</p>' +
             '</div>';
 
           const checkbox = label.querySelector('input');
           checkbox.addEventListener('change', (e) => {
+            const targetSet = isMoviesGroup ? state.selectedMovies : state.selected;
             if (e.target.checked) {
-              state.selected.add(saga.id);
+              targetSet.add(item.id);
               label.classList.add('checked');
             } else {
-              state.selected.delete(saga.id);
+              targetSet.delete(item.id);
               label.classList.remove('checked');
             }
             updateUrlsAndCounters();
@@ -451,7 +498,10 @@ export function renderConfigurePage(
     function syncCheckboxes() {
       document.querySelectorAll('.saga-checkbox').forEach(cb => {
         const sagaId = cb.getAttribute('data-saga-id');
-        const isChecked = state.selected.has(sagaId);
+        const movieId = cb.getAttribute('data-movie-id');
+        const isChecked = sagaId
+          ? state.selected.has(sagaId)
+          : state.selectedMovies.has(movieId);
         cb.checked = isChecked;
         const parent = cb.closest('.saga-item');
         if (parent) {
@@ -470,11 +520,13 @@ export function renderConfigurePage(
 
     document.getElementById('btn-select-all').addEventListener('click', () => {
       SAGAS_DATA.forEach(s => state.selected.add(s.id));
+      MOVIES_DATA.forEach(m => state.selectedMovies.add(m.id));
       syncCheckboxes();
     });
 
     document.getElementById('btn-select-none').addEventListener('click', () => {
       state.selected.clear();
+      state.selectedMovies.clear();
       syncCheckboxes();
     });
 

@@ -450,6 +450,41 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     expect(notFoundRes.status).toBe(404);
   });
 
+  it('should filter selected movies and hide movie catalog in manifest when movies array is empty', async () => {
+    // 1. Only The Simpsons Movie selected
+    const configOnlySimpsonsMovie = toBase64Url({
+      lang: 'es',
+      sagas: ['simpsons-bob-saga'],
+      movies: ['tt0462538'],
+    });
+
+    const catRes = await worker.fetch(
+      new Request(
+        `https://springfield-3000.workers.dev/${configOnlySimpsonsMovie}/catalog/movie/springfield3000-movies.json`
+      ),
+      {}
+    );
+    expect(catRes.status).toBe(200);
+    const catJson = (await catRes.json()) as any;
+    expect(catJson.metas.length).toBe(1);
+    expect(catJson.metas[0].id).toBe('tt0462538');
+    expect(catJson.metas[0].name).toBe('Los Simpson: La Película');
+
+    // 2. 0 movies selected -> manifest omits springfield3000-movies catalog
+    const configNoMovies = toBase64Url({
+      lang: 'en',
+      sagas: ['simpsons-bob-saga'],
+      movies: [],
+    });
+    const manifestRes = await worker.fetch(
+      new Request(`https://springfield-3000.workers.dev/${configNoMovies}/manifest.json`),
+      {}
+    );
+    const manifestJson = (await manifestRes.json()) as any;
+    expect(manifestJson.catalogs.length).toBe(1);
+    expect(manifestJson.catalogs[0].id).toBe('springfield3000-sagas');
+  });
+
   it('should return 404 for prototype pollution keys like constructor or __proto__', async () => {
     const req1 = new Request(
       'https://springfield-3000.workers.dev/meta/series/constructor.json'
@@ -472,10 +507,12 @@ describe('Worker HTTP Router & Stremio Protocol', () => {
     const html = await res.text();
     expect(html).not.toContain('cdn.tailwindcss.com');
     expect(html).toContain('width: 3rem; height: 4.5rem;');
+    expect(html).toContain('repeat(2, minmax(0, 1fr))');
+    expect(html).toContain('MOVIES_DATA = ');
     const csp = res.headers.get('Content-Security-Policy') || '';
     expect(csp).toContain("base-uri 'none'");
     expect(csp).toContain("form-action 'none'");
-    expect(csp).toContain("img-src 'self' data:");
+    expect(csp).toContain("img-src 'self' https://images.metahub.space data:");
     expect(csp).toMatch(/script-src 'nonce-[a-f0-9]+'/);
     expect(res.headers.get('X-Frame-Options')).toBe('DENY');
     expect(res.headers.get('X-Content-Type-Options')).toBe('nosniff');

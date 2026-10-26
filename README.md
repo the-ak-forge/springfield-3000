@@ -24,7 +24,7 @@
 * **Individual Vertical Posters:** Each saga features bespoke 2:3 vertical typography posters (`600x900`), self-hosted directly via Cloudflare Workers Static Assets at `/poster/:lang/:sagaId.jpg` with CORS.
 * **Canonical Cinemeta & IMDb Delegation:** Series video IDs resolve to canonical identifiers (`tt0096697:season:episode` and `tt0149460:season:episode`) and movies resolve to their standalone IMDb IDs (`tt0471711`, `tt0462538`, etc.), allowing external stream providers to query the exact episode or film.
 * **Bilingual Support (EN / ES):** Full English and Spanish localization for saga titles, episode names, movies, and overviews.
-* **Interactive Web Configurator (`/configure`):** Clean, zero-dependency responsive dark interface where users can select their preferred sagas and language in one click.
+* **Interactive Web Configurator (`/configure`):** Clean, zero-dependency responsive dark interface where users can select their preferred sagas, feature films, and language in one click.
 * **Serverless & Ultra-Fast:** Built with native Web Standards (`Request`, `Response`, `URL`) running on Cloudflare Workers with zero heavy dependencies.
 
 ---
@@ -97,7 +97,7 @@ springfield3000/
 │   ├── version.ts          # Centralized version constant
 │   └── index.ts            # Cloudflare Worker router & Stremio endpoints
 ├── tests/
-│   └── addon.test.ts       # 35 automated unit and integration tests
+│   └── addon.test.ts       # 36 automated unit and integration tests
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.scripts.json

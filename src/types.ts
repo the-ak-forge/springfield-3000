@@ -48,6 +48,7 @@ export interface MovieDefinition {
 export interface UserConfig {
   lang: Language;
   sagas: string[];
+  movies?: string[];
   v?: string;
 }
 
